@@ -13,7 +13,6 @@ define([], function() {
             var n = 10;
             var called = 0;
             var observer = new MutationObserver(function(items, observer) {
-                console.log(arguments);
                 if(called === 0) {
                     equal(items.length, n, 'childList notices added items');
                     $test.empty();

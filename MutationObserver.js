@@ -36,6 +36,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
             }
             return attrs;
         };
+        var noop = function() {};
         var patches = {
             attributes: function(element) {
                 var $old = getAttributes(element);
@@ -66,6 +67,12 @@ Goals: keep this async and batch changes (gotta use setInterval)
                     });
                     return changed;
                 };
+            },
+
+            attributeOldValue: noop,
+
+            attributeFilter: function(filter) {
+
             },
 
             childList: function(element) {
@@ -127,7 +134,8 @@ Goals: keep this async and batch changes (gotta use setInterval)
                 var changed = [];
 
                 this._watched.each(function(watcher) {
-                    push.apply(changed, watcher());
+                    var data = watcher();//expected array
+                    if(data) push.apply(changed, data);
                 });
 
                 if (changed.length > 0) { //fire away

@@ -12,7 +12,6 @@ define([], function() {
             });
             var called = 0;
             var observer = new MutationObserver(function(items, observer) {
-                console.log(arguments);
                 equal(items.length, 3, 'noticed attribute all changes');
                 ok(observer instanceof MutationObserver, 'attributes called with MutationObserver as second arg');
                 called += 1;
