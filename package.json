@@ -1,0 +1,21 @@
+{
+  "name" : "MutationObserver",
+  "description" : "Mootools MutationObserver polyfill (no addons)",
+  "keywords" : ["mutation observer"],
+  "author" : "Graeme Yeates <yeatesgraeme@gmail.com>",
+  "repository" : {"type": "git", "url": "git://github.com/jashkenas/underscore.git"},
+  "main" : "MutationObserver.js",
+  "version" : "0.0.1",
+  "devDependencies": {
+    "phantomjs": "1.9.0-1"
+  },
+  "scripts": {
+    "test": "phantomjs test/vendor/runner.js test/index.html 5"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://raw.github.com/jashkenas/underscore/master/LICENSE"
+    }
+  ]
+}
