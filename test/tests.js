@@ -1,14 +1,17 @@
 
+
+QUnit.config.testTimeout = 1000;
+QUnit.config.autostart = false;//was having trouble with autostart
+
 //Simple test manager to delete window.MutationObserver after the original test runs
 $(function() {
 
-    QUnit.config.testTimeout = 1000;
-
     curl(["mutationobserver.js"], function(MutationObserverTests) {
-        MutationObserverTests("MutationObserver");
 
-        QUnit.moduleDone( function(context) {
-            if(context.name !== "MutationObserver") return;
+        QUnit.start();
+
+        var test2 = function(context) {
+            if(context && context.name !== "MutationObserver") return;
 
             window.WebkitMutationObserver = window.MutationObserver = null;
             delete window.MutationObserver;//so poly goes in
@@ -19,6 +22,14 @@ $(function() {
                     MutationObserverTests("MutationObserver-Shim");
                 }
             });
-        });
+        }
+
+        if(window.MutationObserver) {
+            MutationObserverTests("MutationObserver");
+            QUnit.moduleDone( test2 );
+        } else {
+            test2();
+        }
+        
     });
 });
