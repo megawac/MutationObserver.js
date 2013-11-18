@@ -11,7 +11,7 @@ define([], function() {
                 } 
             });
             var called = 0;
-            var observer = new MutationObserver(function(items, observer) {
+            var observer = window.observer = new MutationObserver(function(items, observer) {
                 if(called === 0) {
                     ok(observer instanceof MutationObserver, 'called once');
                     observer.disconnect();

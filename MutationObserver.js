@@ -28,22 +28,29 @@ Goals: keep this async and batch changes (gotta use setInterval)
         var getChildren = function($e) {
             return new Elements($e.children);
         };
-        var getAttributes = function($e) { //store dynamic attributes in a object
+        var getAttributes = function($e, filter) { //store dynamic attributes in a object
             var attrs = {};
             var attributes = $e.attributes;
             for (var i = attributes.length - 1; i >= 0; i--) {
-                attrs[attributes[i].name] = attributes[i].value;
+                if(!filter || filter[attributes[i].name]) {
+                    attrs[attributes[i].name] = attributes[i].value;
+                }
             }
             return attrs;
         };
         var noop = function() {};
         var patches = {
-            attributes: function(element) {
-                var $old = getAttributes(element);
+            attributes: function(element, filter) {
+                if(Type.isArray(filter)) {
+                    filter = filter.reduce(function(a, b) {a[b] = true; return a;}, {});
+                } else {
+                    filter = null;
+                }
+                var $old = getAttributes(element, filter);
                 return function() {
                     var changed = [];
                     var old = $old;
-                    var attr = getAttributes(element);
+                    var attr = getAttributes(element, filter);
                     $old = attr;
 
                     Object.each(attr, function(val, prop) {
@@ -70,10 +77,6 @@ Goals: keep this async and batch changes (gotta use setInterval)
             },
 
             attributeOldValue: noop,
-
-            attributeFilter: function(filter) {
-
-            },
 
             childList: function(element) {
                 var $old = getChildren(element);
@@ -123,8 +126,14 @@ Goals: keep this async and batch changes (gotta use setInterval)
 
             observe: function(target, config) {
                 var self = this;
+
+                if(config.attributeFilter && config.attributes) {
+                    config.attributes = config.attributeFilter;
+                    delete config.attributeFilter;
+                }
+
                 Object.each(config, function(use, type) {
-                    if (use) self._watched.push(patches[type].call(self, target));
+                    if (use) self._watched.push(patches[type].call(self, target, use));
                 });
 
                 this._intervals.push(this._watch.periodical(this.options.period, this));
@@ -144,7 +153,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
             },
 
             disconnect: function() {
-                this._intervals.each(clearInterval);
+                this._intervals.each(function(t) {clearInterval(t);});//ie throws a fit if u dont wrap clear
             }
 
         });
