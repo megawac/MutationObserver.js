@@ -13,6 +13,7 @@ A compliant shim for the MutationObserver API ([can I use?](http://caniuse.com/m
 #### MutationRecord
 
 * `addedNodes` and `removedNodes` are arrays instead of `NodeList`s
+* `oldValue` is always called with attribute changes
 
 ### Supported MutationObserverInit properties
 
@@ -26,6 +27,8 @@ Currently supports the following [MutationObserverInit properties](https://devel
 
 ### Compatibility
 
-The shim falls back on a simple periodical check so theoretically should work in all browsers [mootools](http://mootools.net/) supports. Test fiddle: http://jsbin.com/uxAQEWuL/3
+The shim falls back on a simple periodical check so theoretically should work in all browsers [mootools](http://mootools.net/) supports. 
+
+Try [running the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html) and see this simple example: http://jsbin.com/uxAQEWuL/3
 
 See http://dev.opera.com/articles/view/mutation-observers-tutorial/ for sample usage.
