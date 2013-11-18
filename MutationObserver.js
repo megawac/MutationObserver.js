@@ -76,6 +76,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
                 };
             },
 
+            attributeFilter: noop,
             attributeOldValue: noop,
 
             childList: function(element) {
@@ -109,7 +110,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
                     return changed;
                 };
             }
-        }
+        };
 
         window.MutationObserver = new Class({
             options: {
@@ -129,11 +130,13 @@ Goals: keep this async and batch changes (gotta use setInterval)
 
                 if(config.attributeFilter && config.attributes) {
                     config.attributes = config.attributeFilter;
-                    delete config.attributeFilter;
                 }
 
                 Object.each(config, function(use, type) {
-                    if (use) self._watched.push(patches[type].call(self, target, use));
+                    if (use) {
+                        var patch = patches[type].call(self, target, use);
+                        if(patch) self._watched.push(patch);
+                    }
                 });
 
                 this._intervals.push(this._watch.periodical(this.options.period, this));
