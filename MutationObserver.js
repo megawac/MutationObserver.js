@@ -8,6 +8,12 @@ The fallback for MutationRecord will return an `Elements` collection in place of
 Goals: keep this async and batch changes (gotta use setInterval)
 */
 (function(window) {
+	"use strict";
+	/*
+	prefix bugs:
+		-https://bugs.webkit.org/show_bug.cgi?id=85161
+		-https://bugzilla.mozilla.org/show_bug.cgi?id=749920
+	*/ 
     window.MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
     if (!window.MutationObserver) {
         var MutationRecord = window.MutationRecord = function(data) {
@@ -41,7 +47,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
         var noop = function() {};
         var patches = {
             attributes: function(element, filter) {
-                if(Type.isArray(filter)) {
+                if(filter && filter.reduce) {
                     filter = filter.reduce(function(a, b) {a[b] = true; return a;}, {});
                 } else {
                     filter = null;

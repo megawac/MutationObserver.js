@@ -7,7 +7,7 @@ A compliant shim for the MutationObserver API ([can I use?](http://caniuse.com/m
 
 #### MutationObserver
 
-* Implemented using `setInterval` (25 ms window) rether than `setImmediate` so calls will be made less frequently and likely with more data than the standard MutationObserver. In addition, it may miss changes that occurred and then were lost in the interval window.
+* Implemented using `setInterval` (ever 25 ms) rather than using a `setImmediate` shim; so calls will be made less frequently and likely with more data than the standard MutationObserver. In addition, it can miss changes that occur and then are lost in the interval window.
 * Setting an observed elements html using `innerHTML` will call `childList` changes with many items with only 1 addedNode or removed node. With the standard you would have 1 call with multiple nodes in addedNodes and removedNodes
 
 #### MutationRecord
@@ -29,6 +29,9 @@ Currently supports the following [MutationObserverInit properties](https://devel
 
 The shim falls back on a simple periodical check so theoretically should work in all browsers [mootools](http://mootools.net/) supports. 
 
-Try [running the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html) and see this simple example: http://jsbin.com/uxAQEWuL/3
+Try [running the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html) and see some simple example usage:
+
+* http://jsbin.com/uxAQEWuL/3 listen to images being appended dynamically
+* http://jsbin.com/uxAQEWuL/5 autoscroll an element as new content is added
 
 See http://dev.opera.com/articles/view/mutation-observers-tutorial/ for sample usage.

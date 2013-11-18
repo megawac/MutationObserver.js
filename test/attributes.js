@@ -1,7 +1,7 @@
 define([], function() {
     return function() {//tests
         QUnit.asyncTest("attributes", function() {
-            expect(3);
+            expect(2);
 
             var $test = new Element("div", {
                 'class': "test",
@@ -13,7 +13,6 @@ define([], function() {
             var called = 0;
             var observer = new MutationObserver(function(items, observer) {
                 equal(items.length, 3, 'noticed attribute all changes');
-                ok(observer instanceof MutationObserver, 'attributes called with MutationObserver as second arg');
                 called += 1;
             });
 
