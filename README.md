@@ -34,6 +34,7 @@ The shim relies on the following methods to be supported or shimmed:
 * `Array.prototype.forEach`
 * `Array.prototype.map`
 * `Array.prototype.reduce`
+* `Function.prototype.bind`
 
 
 Try [running the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html) and see some simple example usage:

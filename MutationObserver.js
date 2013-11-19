@@ -152,7 +152,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
                     }
                 });
 
-                this._intervals.push(this._watch.periodical(this.options.period, this));
+                this._intervals.push(setInterval(this._watch.bind(this), this.options.period));
             },
 
             _watch: function() {
