@@ -41,7 +41,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
         };
 
         var getChildren = function($e) {
-            return map.call($e.children, function(e) {return e});
+            return map.call($e.childNodes, function(e) {return e});
         };
         var getAttributes = function($e, filter) { //store dynamic attributes in a object
             var attrs = {};

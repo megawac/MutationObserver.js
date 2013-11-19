@@ -13,7 +13,7 @@ define([], function() {
         }
 
         QUnit.asyncTest("childList", function() {
-            expect(5);
+            expect(7);
 
             var $test = $("<div>", {
                 'class': "test",
@@ -42,7 +42,13 @@ define([], function() {
                     ok(changed.added === n && changed.removed === n, 'childList matches removed nodes');
                     $test.html("<div>hi</div><span>test</span><a href='test.com'></a>");
                 } else if(called === 2) {
-                    ok(changed.added === 3 && changed.removed === n, 'works with setting html');
+                    ok(changed.added === 3 && changed.removed === n, 'works with setting html explicitly with elements');
+                    $test.text("some test text");
+                } else if(called === 3) {
+                    ok(changed.removed === 3 && changed.added === 1, "works with setting text");
+                    $test.html("<span>you work</span> yet?");
+                } else if (called === 4) {
+                    ok(changed.removed === 1 && changed.added === 2, "works with mixing setting html and text");
                 }
                 called += 1;
             });
@@ -58,9 +64,9 @@ define([], function() {
             };
 
             setTimeout(function() {
-                ok(called === 3, "Got called " + called + " in 100 ms. Expected 3 calls.");
+                ok(called === 5, "Got called " + called + " in 150 ms. Expected 5 calls.");
                 QUnit.start();
-            }, 100);
+            }, 150);
         });
     }
 });

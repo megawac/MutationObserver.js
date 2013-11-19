@@ -1,7 +1,7 @@
 define([], function() {
     return function() {//tests
         QUnit.asyncTest("observe", function() {
-            expect(3);
+            expect(4);
 
             var $test = $("<div>", {
                 'class': "test",
@@ -19,7 +19,7 @@ define([], function() {
             var called = 0;
             var expected_calls = {
                 0: {
-                    test1: 3,
+                    test1: 4,
                     test2: 1
                 },
                 1: {
@@ -41,7 +41,14 @@ define([], function() {
 
                 deepEqual(calls, expected_calls[called], "Multiple observed elements called with correct args on try: " + called);
 
-                if(called === 0) $test2.html("<strong>notta</strong>");
+                if(called === 0) {
+                    ok(items.some(function(item) {
+                        return item.type === "childList";
+                    }) && items.some(function(item) {
+                        return item.type === "attributes";
+                    }), "Can watch multiple mutationobserverinit properties");
+                    $test2.html("<strong>notta</strong>");
+                }
 
                 called += 1;
             });
@@ -58,6 +65,7 @@ define([], function() {
             teste1.removeAttribute("id");
             teste1.setAttribute("data-test", Math.random() * 9999);
             teste1.style.display = "table";
+            $("<span>", {value: "hi"}).appendTo(teste1);
 
             $("<a>", {href: "github.com"}).appendTo(teste2);
 
