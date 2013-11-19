@@ -9,6 +9,7 @@ A compliant shim for the MutationObserver API ([can I use?](http://caniuse.com/m
 
 * Implemented using `setInterval` (ever 25 ms) rather than using a `setImmediate` shim; so calls will be made less frequently and likely with more data than the standard MutationObserver. In addition, it can miss changes that occur and then are lost in the interval window.
 * Setting an observed elements html using `innerHTML` will call `childList` changes with many items with only 1 addedNode or removed node. With the standard you would have 1 call with multiple nodes in addedNodes and removedNodes
+* `.takeRecords()` is currently not supported
 
 #### MutationRecord
 
@@ -25,9 +26,15 @@ Currently supports the following [MutationObserverInit properties](https://devel
 * **attributeOldValue**: doesn't do anything attributes are always called with old value
 
 
-### Compatibility
+### Dependencies and Compatibility
 
-The shim falls back on a simple periodical check so theoretically should work in all browsers [mootools](http://mootools.net/) supports. 
+The shim relies on the following methods to be supported or shimmed:
+
+* `Array.prototype.indexOf`
+* `Array.prototype.forEach`
+* `Array.prototype.map`
+* `Array.prototype.reduce`
+
 
 Try [running the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html) and see some simple example usage:
 

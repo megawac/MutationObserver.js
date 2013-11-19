@@ -16,8 +16,18 @@ Goals: keep this async and batch changes (gotta use setInterval)
 	*/ 
     window.MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
     if (!window.MutationObserver) {
+        var arrayProto = Array.prototype;
+        var push = arrayProto.push;
+        var map = arrayProto.map;
+        var has = Object.hasOwnProperty;
+        var each = function (object, fn, bind){
+            for (var key in object){
+                if (has.call(object, key)) fn.call(bind, object[key], key, object);
+            }
+        };
+
         var MutationRecord = window.MutationRecord = function(data) {
-            Object.each(data, function(v,k) {
+            each(data, function(v,k) {
                 this[k] = v;
             }, this);
         }
@@ -30,9 +40,8 @@ Goals: keep this async and batch changes (gotta use setInterval)
             oldValue: null
         };
 
-        var push = Array.prototype.push;
         var getChildren = function($e) {
-            return new Elements($e.children);
+            return map.call($e.children, function(e) {return e});
         };
         var getAttributes = function($e, filter) { //store dynamic attributes in a object
             var attrs = {};
@@ -59,7 +68,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
                     var attr = getAttributes(element, filter);
                     $old = attr;
 
-                    Object.each(attr, function(val, prop) {
+                    each(attr, function(val, prop) {
                         if (old[prop] !== val) {
                             changed.push(new MutationRecord({
                                 target: element,
@@ -70,7 +79,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
                         }
                         delete old[prop];
                     });
-                    Object.each(old, function(val, prop) {
+                    each(old, function(val, prop) {
                         changed.push(new MutationRecord({
                             target: element,
                             type: 'attributes',
@@ -93,7 +102,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
                     var kids = getChildren(element);
                     $old = kids;
 
-                    kids.each(function($e) {
+                    kids.forEach(function($e) {
                         var index = old.indexOf($e);
                         if (index !== -1) {
                             old.splice(index, 1);
@@ -106,7 +115,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
                         }
                     });
                     //rest are clearly removed
-                    old.each(function($e) {
+                    old.forEach(function($e) {
                         changed.push(new MutationRecord({
                             target: element,
                             type: 'childList',
@@ -118,17 +127,15 @@ Goals: keep this async and batch changes (gotta use setInterval)
             }
         };
 
-        window.MutationObserver = new Class({
+        window.MutationObserver = function(listener) {
+            this._listener = listener;
+            this._intervals = [];
+            this._watched = [];
+        };
+
+        MutationObserver.prototype = {
             options: {
                 period: 25 //recheck interval
-            },
-
-            _intervals: [],
-
-            _watched: [],
-
-            initialize: function(listener) {
-                this._listener = listener;
             },
 
             observe: function(target, config) {
@@ -138,7 +145,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
                     config.attributes = config.attributeFilter;
                 }
 
-                Object.each(config, function(use, type) {
+                each(config, function(use, type) {
                     if (use) {
                         var patch = patches[type].call(self, target, use);
                         if(patch) self._watched.push(patch);
@@ -151,7 +158,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
             _watch: function() {
                 var changed = [];
 
-                this._watched.each(function(watcher) {
+                this._watched.forEach(function(watcher) {
                     var data = watcher();//expected array
                     if(data) push.apply(changed, data);
                 });
@@ -162,9 +169,8 @@ Goals: keep this async and batch changes (gotta use setInterval)
             },
 
             disconnect: function() {
-                this._intervals.each(function(t) {clearInterval(t);});//ie throws a fit if u dont wrap clear
+                this._intervals.forEach(function(t) {clearInterval(t);});//ie throws a fit if u dont wrap clear
             }
-
-        });
+        };
     }
 })(window);

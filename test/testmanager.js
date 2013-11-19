@@ -13,9 +13,7 @@ $(function() {
         var test2 = function(context) {
             if(context && context.name !== "MutationObserver") return;
 
-            window.WebkitMutationObserver = window.MutationObserver = null;
-            delete window.MutationObserver;//so poly goes in
-            delete window.WebkitMutationObserver;
+            window.WebkitMutationObserver = window.MutationObserver = null;//so poly goes in
 
             Asset.javascript("../MutationObserver.js", {
                 onload: function() {
