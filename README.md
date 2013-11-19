@@ -1,7 +1,7 @@
 MutationObserver [![Build Status](https://travis-ci.org/megawac/MutationObserver.js.png?branch=master)](https://travis-ci.org/megawac/MutationObserver.js)
 ========================
 
-A compliant shim for the MutationObserver API ([can I use?](http://caniuse.com/mutationobserver)). The shim is async and uses interval fallbacks (default checks changes every 25ms) instead of the deprecated [DOM3 MutationEvents](http://www.w3.org/TR/DOM-Level-3-Events/#events-mutationevents).  
+A shim for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131107/#mutation-observers) ([can I use?](http://caniuse.com/mutationobserver)). The shim is async and uses interval fallbacks (default checks changes every 25ms) instead of the deprecated [DOM3 MutationEvents](http://www.w3.org/TR/DOM-Level-3-Events/#events-mutationevents).  
 
 ### Shim differences from standard interface
 

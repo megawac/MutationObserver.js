@@ -3,10 +3,10 @@ define([], function() {
         QUnit.asyncTest("disconnect", 2, function() {
             expect(2);
 
-            var $test = new Element("div", {
+            var $test = $("<div>", {
                 'class': "test",
                 'id': "ya",
-                styles: {
+                css: {
                     display: 'inline'
                 } 
             });
@@ -18,19 +18,19 @@ define([], function() {
                 } else {
                     ok(false, "called after disconnect!")
                 }
-                $test.set("data-test", Number.random(1, 9999));
-                new Element("span").inject($test);
+                $test.attr("data-test", Math.random() * 9999);
+                $("<span>").appendTo($test);
                 called += 1;
             });
 
-            observer.observe($test, {
+            observer.observe($test[0], {
                 attributes: true,
                 childList: true
             });
 
-            $test.erase("id");
-            $test.set("data-test", Number.random(1, 9999));
-            $test.setStyle("display", "table");
+            $test.removeAttr("id");
+            $test.attr("data-test", Math.random() * 9999);
+            $test.css("display", "table");
 
             setTimeout(function() {
                 ok(called === 1, "Got called " + called + " in 100 ms. Expected 1 calls.");

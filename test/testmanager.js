@@ -15,10 +15,8 @@ $(function() {
 
             window.WebkitMutationObserver = window.MutationObserver = null;//so poly goes in
 
-            Asset.javascript("../MutationObserver.js", {
-                onload: function() {
-                    MutationObserverTests("MutationObserver-Shim");
-                }
+            yepnope.injectJs("../MutationObserver.js", function() {
+                MutationObserverTests("MutationObserver-Shim");
             });
         }
 

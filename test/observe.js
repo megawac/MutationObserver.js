@@ -3,16 +3,19 @@ define([], function() {
         QUnit.asyncTest("observe", function() {
             expect(3);
 
-            var $test = new Element("div", {
+            var $test = $("<div>", {
                 'class': "test",
                 'id': "ya",
-                styles: {
+                css: {
                     display: 'inline'
                 }
             });
-            var $test2 = new Element(new Element("span", {
-                'class':"test2"
-            }));
+            var teste1 = $test[0];
+            var $test2 = $("<span>", {
+                'class': "test2"
+            });
+            var teste2 = $test2[0];
+
             var called = 0;
             var expected_calls = {
                 0: {
@@ -25,11 +28,11 @@ define([], function() {
             };
             var observer = new MutationObserver(function(items, observer) {
                 var calls = items.reduce(function(obj, item) {
-                    if(item.target === $test) {
-                        if(obj.test1) obj.test1 += 1;
-                        else obj.test1 = 1;
-                    } else if(item.target === $test2) {
-                    	var n = item.addedNodes.length + item.removedNodes.length;
+                    var n = item.type === "childList" ? item.addedNodes.length + item.removedNodes.length : 1;
+                    if(item.target === teste1) {
+                        if(obj.test1) obj.test1 += n;
+                        else obj.test1 = n;
+                    } else if(item.target === teste2) {
                         if(obj.test2) obj.test2 += n;
                         else obj.test2 = n;
                     }
@@ -38,25 +41,25 @@ define([], function() {
 
                 deepEqual(calls, expected_calls[called], "Multiple observed elements called with correct args on try: " + called);
 
-                if(called === 0) $test2.set("html", "<strong>notta</strong>");
+                if(called === 0) $test2.html("<strong>notta</strong>");
 
                 called += 1;
             });
 
-            observer.observe($test, {
+            observer.observe(teste1, {
                 attributes: true,
                 childList: true
             });
 
-            observer.observe($test2, {
+            observer.observe(teste2, {
                 childList: true
             });
 
-            $test.erase("id");
-            $test.set("data-test", Number.random(1, 9999));
-            $test.setStyle("display", "table");
+            teste1.removeAttribute("id");
+            teste1.setAttribute("data-test", Math.random() * 9999);
+            teste1.style.display = "table";
 
-            $test2.adopt(new Element("a", {href: "github.com"}));
+            $("<a>", {href: "github.com"}).appendTo(teste2);
 
             setTimeout(function() {
                 ok(called === 2, "Got called " + called + " in 100 ms. Expected 2 calls.");

@@ -3,13 +3,14 @@ define([], function() {
         QUnit.asyncTest("Core", function() {
             expect(4);
 
-            var $test = new Element("div", {
+            var $test = $("<div>", {
                 'class': "test",
                 'id': "ya",
-                styles: {
+                css: {
                     display: 'inline'
                 }
             });
+            var teste = $test[0];
 
             /*var tobserver;
             try { //implementation dependent (fails on chrome passes on ff)
@@ -32,22 +33,22 @@ define([], function() {
                 deepEqual(items, itemargs, "Both observers called with the same changes");
             }); 
 
-            observer1.observe($test, {
+            observer1.observe(teste, {
                 attributes: true,
                 childList: true
             });
 
-            observer2.observe($test, {
+            observer2.observe(teste, {
                 attributes: true,
                 childList: true
             });
 
 
-            $test.erase("id");
-            $test.set("data-test", Number.random(1, 9999));
-            $test.setStyle("display", "table");
+            teste.removeAttribute("id");
+            teste.setAttribute("data-test", Math.random() * 9999);
+            teste.style.display = "table";
 
-            $test.adopt(new Element("a", {href: "github.com"}));
+            $("<a>", {href: "github.com", value: "github"}).appendTo(teste);
 
             setTimeout(function() {
                 QUnit.start();
