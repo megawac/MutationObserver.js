@@ -18,7 +18,7 @@ $(function() {
             yepnope.injectJs("../MutationObserver.js", function() {
                 MutationObserverTests("MutationObserver-Shim");
             });
-        }
+        };
 
         if(window.MutationObserver) {
             MutationObserverTests("MutationObserver");

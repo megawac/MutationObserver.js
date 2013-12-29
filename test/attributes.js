@@ -1,19 +1,19 @@
-define([], function() {
+define(["utils"], function(utils) {
     return function() {//tests
         QUnit.asyncTest("attributes", function() {
             expect(2);
 
             var $test = $("<div>", {
-                'class': "test",
-                'id': "ya",
+                "class": "test",
+                "id": "ya",
                 css: {
-                    display: 'inline'
+                    display: "inline"
                 }
             });
             var teste = $test[0];
             var called = 0;
             var observer = new MutationObserver(function(items, observer) {
-                equal(items.length, 3, 'noticed attribute all changes');
+                equal(items.length, 3, "noticed attribute all changes");
                 called += 1;
             });
 
@@ -36,17 +36,17 @@ define([], function() {
             expect(2);
 
             var $test = $("<div>", {
-                'class': "test",
-                'id': "ya",
+                "class": "test",
+                "id": "ya",
                 css: {
-                    display: 'inline'
+                    display: "inline"
                 }
             });
             var teste = $test[0];
 
             var called = 0;
             var observer = new MutationObserver(function(items, observer) {
-                equal(items.length, 2, 'noticed correct number of attribute changes');
+                equal(items.length, 2, "noticed correct number of attribute changes");
                 called += 1;
             });
 
@@ -64,5 +64,5 @@ define([], function() {
                 QUnit.start();
             }, 100);
         });
-    }
+    };
 });

@@ -1,53 +1,61 @@
-define([], function() {
+define(["utils"], function(utils) {
     return function() {//tests
-        var countChanged = function(items) {
-            var changed = {
-                added: 0,
-                removed: 0
-            }
-            items.forEach(function(record) {
-                changed.added   += record.addedNodes.length;
-                changed.removed += record.removedNodes.length;
-            });
-            return changed;
-        }
 
         QUnit.asyncTest("childList", function() {
-            expect(7);
+            expect(9);
 
             var $test = $("<div>", {
-                'class': "test",
-                'id': "ya",
+                "class": "test",
+                "id": "ya",
                 css: {
-                    display: 'inline'
-                } 
+                    display: "inline"
+                }
             });
             var teste = $test[0];
 
+            var changes = {
+                addedNodes: [],
+                removedNodes: []
+            };
+
             var n = 10;
             var called = 0;
+            var $old,changed,added,i;
             var observer = new MutationObserver(function(items, observer) {
-                var changed = countChanged(items);
-
                 if(called === 0) {
-                    equal(changed.added, n, 'childList notices added items');
-                    $test.empty();
-                    for (var i = 0; i < n; i++) {
-                        $("<span>", {
-                            value: i
-                        }).appendTo(teste);
+                    ok(utils.expectedMutations(items, changes), "childList notices all added items");
+                    ok(items.every(function(item) { return item.target === teste; }), "childList is called with correct target");
+                    ok(items.every(function(item) { return item.type === "childList"; }), "childList is called with type='childList'");
+
+                    $old = utils.$children($test);
+                    added = [];
+                    for (i = 0; i < n; i++) {
+                        added.push("<span>" + i + "</span>");
+                    }
+                    added = utils.$makeArray(added);
+                    $test.empty().append(added);
+                    changes = {
+                        addedNodes: utils.$children($test),
+                        removedNodes: $old
                     };
                 } else if(called === 1) {
-                    ok(observer instanceof MutationObserver, 'childList works twice');
-                    ok(changed.added === n && changed.removed === n, 'childList matches removed nodes');
-                    $test.html("<div>hi</div><span>test</span><a href='test.com'></a>");
+                    ok(observer instanceof MutationObserver, "childList works twice");
+                    ok(utils.expectedMutations(items, changes), "childList matches removed nodes");
+                    $old = utils.$children($test);
+                    $test.html("<div>hi</div><span>test</span><a href=\"test.com\"></a>");
+                    changes = {
+                        addedNodes: utils.$children($test),
+                        removedNodes: $old
+                    };
                 } else if(called === 2) {
-                    ok(changed.added === 3 && changed.removed === n, 'works with setting html explicitly with elements');
+                    ok(utils.expectedMutations(items, changes), "works with setting html explicitly with elements");
                     $test.text("some test text");
                 } else if(called === 3) {
+                    changed = utils.countMutations(items);
                     ok(changed.removed === 3 && changed.added === 1, "works with setting text");
                     $test.html("<span>you work</span> yet?");
                 } else if (called === 4) {
+                    changed = utils.countMutations(items);
                     ok(changed.removed === 1 && changed.added === 2, "works with mixing setting html and text");
                 }
                 called += 1;
@@ -57,16 +65,17 @@ define([], function() {
                 childList: true
             });
 
-            for (var i = 0; i < n; i++) {
-                $("<span>", {
-                    value: i
-                }).appendTo(teste);
-            };
+            added = [];
+            for (i = 0; i < n; i++) {
+                added.push("<span>" + i + "</span>");
+            }
+            changes.addedNodes = added = utils.$makeArray(added);
+            $test.append(added);
 
             setTimeout(function() {
                 ok(called === 5, "Got called " + called + " in 150 ms. Expected 5 calls.");
                 QUnit.start();
             }, 150);
         });
-    }
+    };
 });

@@ -1,0 +1,83 @@
+define([], function() {
+    var $ = window.jQuery;
+    var arrayProto = Array.prototype;
+    var slice = arrayProto.slice;
+
+    //mutation helper helpers
+    var similar = function(set1, set2) {
+        return utils.every(set1, function(node) {
+            return utils.containsNode(set2, node);
+        }) && utils.every(set2, function(node) {
+            return utils.containsNode(set1, node);
+        });
+    };
+
+    var utils = {
+        each: function(col, fn) {
+            return arrayProto.forEach.call(col, fn);
+        },
+        any: function(col, fn) {
+            return arrayProto.any.call(col, fn);
+        },
+        every: function(col, fn) {
+            return arrayProto.every.call(col, fn);
+        },
+        reduce: function(col, fn, memo) {
+            return arrayProto.reduce.call(col, fn, memo);
+        },
+
+        $randomChild: function(ele) {
+            if(ele instanceof $) ele = ele.get(Math.floor(ele.length * Math.random()));
+            return $(ele.children[Math.floor(ele.children.length * Math.random())]);
+        },
+
+        $children: function(ele) {
+            if(ele instanceof $) {
+                return ele.map(function() {return slice.call(this.childNodes);}).get();
+            }
+            return slice.call(ele.childNodes);
+        },
+
+        $makeArray: function($a) {
+            return $a.map(function(node) {return $(node).get(0);});
+        },
+
+        //mutation helpers
+        containsNode: function(col, node) {
+            for (var i = 0; i < col.length; i++) {
+                if(node.isEqualNode(col[i])) return true;
+            }
+            return false;
+        },
+
+        reduceNodes: function(mutations, property) {
+            return utils.reduce(mutations, function(memo, cur) {
+                return memo.concat(Array.prototype.slice.call(cur[property]));
+            }, []);
+        },
+
+        expectedMutations: function(mutations, expected) {
+            var changes = {
+                addedNodes: utils.reduceNodes(mutations,"addedNodes"),
+                removedNodes: utils.reduceNodes(mutations, "removedNodes")
+            };
+            return similar(changes.addedNodes, expected.addedNodes) && similar(changes.removedNodes, expected.removedNodes);
+        },
+
+        countMutations: function(items) {
+            var changed = {
+                added: 0,
+                removed: 0
+            };
+            items.forEach(function(record) {
+                changed.added   += record.addedNodes.length;
+                changed.removed += record.removedNodes.length;
+            });
+            return changed;
+        }
+
+
+    };
+
+    return utils;
+});

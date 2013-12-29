@@ -14,13 +14,13 @@ define([], function() {
 
             /*var tobserver;
             try { //implementation dependent (fails on chrome passes on ff)
-            	tobserver = MutationObserver(function() {
+                tobserver = MutationObserver(function() {
 
-            	});
+                });
             } catch(o_O) {
             }
             ok(tobserver instanceof MutationObserver, "Can be instantiated without new keyword :o");
-			*/
+            */
             var itemargs = [];
             var observer1 = new MutationObserver(function(items, observer) {
                 ok(items.length === 4, "observer1 was called correctly");
@@ -31,7 +31,7 @@ define([], function() {
             var observer2 = new MutationObserver(function(items, observer) {
                 ok(items.length === 4, "observer2 was called correctly on the same watched element");
                 deepEqual(items, itemargs, "Both observers called with the same changes");
-            }); 
+            });
 
             observer1.observe(teste, {
                 attributes: true,
@@ -54,5 +54,5 @@ define([], function() {
                 QUnit.start();
             }, 100);
         });
-    }
+    };
 });

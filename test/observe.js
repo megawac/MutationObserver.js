@@ -1,18 +1,18 @@
-define([], function() {
+define(["utils"], function(utils) {
     return function() {//tests
         QUnit.asyncTest("observe", function() {
             expect(4);
 
             var $test = $("<div>", {
-                'class': "test",
-                'id': "ya",
+                "class": "test",
+                "id": "ya",
                 css: {
-                    display: 'inline'
+                    display: "inline"
                 }
             });
             var teste1 = $test[0];
             var $test2 = $("<span>", {
-                'class': "test2"
+                "class": "test2"
             });
             var teste2 = $test2[0];
 
@@ -35,6 +35,9 @@ define([], function() {
                     } else if(item.target === teste2) {
                         if(obj.test2) obj.test2 += n;
                         else obj.test2 = n;
+                    } else {
+                        console.error("wtf is this:");
+                        console.log(item);
                     }
                     return obj;
                 }, {});
@@ -74,5 +77,5 @@ define([], function() {
                 QUnit.start();
             }, 100);
         });
-    }
+    };
 });
