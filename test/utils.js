@@ -35,7 +35,7 @@ define([], function() {
 
         $randomChild: function(ele) {
             if(ele instanceof $) ele = ele.get(Math.floor(ele.length * Math.random()));
-            return $(ele.children[Math.floor(ele.children.length * Math.random())]);
+            return $(ele.childNodes[Math.floor(ele.childNodes.length * Math.random())]);
         },
 
         $children: function(ele) {
