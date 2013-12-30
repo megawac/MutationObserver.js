@@ -12,6 +12,13 @@ define([], function() {
         });
     };
 
+    var counter = 0;
+    var getId = function($ele) {
+        var id = $ele.nodeType === 3 ? $ele.nodeValue ://text node id is the text content
+                                        $ele.id || $ele.getAttribute("mut-id") || ++counter;
+        return id;
+    }
+
     var utils = {
         each: function(col, fn) {
             return arrayProto.forEach.call(col, fn);
