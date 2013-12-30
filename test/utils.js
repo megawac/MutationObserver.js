@@ -42,10 +42,14 @@ define([], function() {
             return $a.map(function(node) {return $(node).get(0);});
         },
 
+        sameNode: function(node1, node2) {//from ./MutationObserver.js
+            return node1 && node2 && getId(node1) === getId(node2);
+        },
+
         //mutation helpers
         containsNode: function(col, node) {
             for (var i = 0; i < col.length; i++) {
-                if(node.isEqualNode(col[i])) return true;
+                if(utils.sameNode(node, col[i]) || node.isEqualNode(col[i])) return true;
             }
             return false;
         },
