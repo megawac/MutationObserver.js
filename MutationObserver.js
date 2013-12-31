@@ -1,11 +1,10 @@
-/*
-Straight up polyfill of mutationobserver for mootools
-will lazy patch in the necessary polyfills 
-See http://dev.opera.com/articles/view/mutation-observers-tutorial/ for usage
-
-The fallback for MutationRecord will return an `Elements` collection in place of NodeList
-
-Goals: keep this async and batch changes (gotta use setInterval)
+/*!
+* Shim for MutationObserver interface
+* Author: Graeme Yeates (github.com/megawac)
+* Repository: https://github.com/megawac/MutationObserver.js
+* License: WTFPL V2, 2004 (wtfpl.net).
+* Feel free to exclude the header and redistribute as you please.
+* See https://github.com/WebKit/webkit/blob/master/Source/WebCore/dom/MutationObserver.cpp for current webkit source c++ implementation
 */
 (function(window) {
 	"use strict";
