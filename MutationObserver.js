@@ -7,12 +7,12 @@
 * See https://github.com/WebKit/webkit/blob/master/Source/WebCore/dom/MutationObserver.cpp for current webkit source c++ implementation
 */
 (function(window) {
-	"use strict";
-	/*
-	prefix bugs:
-		-https://bugs.webkit.org/show_bug.cgi?id=85161
-		-https://bugzilla.mozilla.org/show_bug.cgi?id=749920
-	*/
+    "use strict";
+    /*
+    prefix bugs:
+        -https://bugs.webkit.org/show_bug.cgi?id=85161
+        -https://bugzilla.mozilla.org/show_bug.cgi?id=749920
+    */
     window.MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
     if (!window.MutationObserver) {
         var arrayProto = Array.prototype;
@@ -24,20 +24,6 @@
             for (var key in object){
                 if (has.call(object, key)) fn.call(bind, object[key], key, object);
             }
-        };
-
-        var MutationRecord = window.MutationRecord = function(data) {
-            each(data, function(v,k) {
-                this[k] = v;
-            }, this);
-        };
-        MutationRecord.prototype = {
-            target: null,
-            type: null,
-            addedNodes: [],
-            removedNodes: [],
-            attributeName: null,
-            oldValue: null
         };
 
         var getAttributes = function($e, filter) { //store dynamic attributes in a object
@@ -79,7 +65,7 @@
 
         //set the ids for all of an elements children
         var $id_kids = function(ele, deep) {
-            if(ele.nodeType !== 3) {
+            if(ele.nodeType !== 3) {//textNode
                 foreach.call(ele.children, function(node) {//only iterate elements not text nodes
                     getId(node);
                     if(deep) $id_kids(node, deep);
@@ -252,10 +238,35 @@
             }
         };
 
+        /* public api code */
+        var MutationRecord = window.MutationRecord = function(data) {
+            each(data, function(v,k) {
+                this[k] = v;
+            }, this);
+        };
+
         var MutationObserver = window.MutationObserver = function(listener) {
-            this._listener = listener;
-            this._intervals = [];
-            this._watched = [];
+            var self = this;
+            //http://dom.spec.whatwg.org/#queuing-a-mutation-record
+            var check = function() {
+                var mutations = self.takeRecords();
+
+                if (mutations.length > 0) { //fire away
+                    listener(mutations, self);
+                }
+            };
+
+            self._watched = [];
+            self._intervals = [setInterval(check, self.options.period)];
+        };
+
+        MutationRecord.prototype = {
+            target: null,
+            type: null,
+            addedNodes: [],
+            removedNodes: [],
+            attributeName: null,
+            oldValue: null
         };
 
         MutationObserver.prototype = {
@@ -266,8 +277,10 @@
             observe: function(target, config) {
                 var self = this;
 
-                if(config.attributeFilter && config.attributes) {
-                    config.attributes = config.attributeFilter;
+                //see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
+                //not going to throw here but going to follow the spec config sets
+                if(config.attributeFilter || config.attributeOldValue) {
+                    config.attributes = config.attributeFilter || true;
                 }
                 if(config.subtree && config.childList) {
                     config.childList = {deep:true};
@@ -276,24 +289,21 @@
                 each(config, function(use, type) {
                     if (use) {
                         var patch = patches[type].call(self, target, use);
-                        if(patch) self._watched.push(patch);
+                        if(patch) self._watched.push(patch);//patch will be a function or falsy if we shouldnt watch
                     }
                 });
-
-                this._intervals.push(setInterval(this._watch.bind(this), this.options.period));
             },
 
-            _watch: function() {
-                var changed = [];
+            //finds mutations since last check and empties the "record queue" i.e. mutations will only be found once
+            takeRecords: function() {
+                var mutations = [];
 
                 this._watched.forEach(function(watcher) {
                     var data = watcher();//expected array
-                    if(data) push.apply(changed, data);
+                    if(data) push.apply(mutations, data);
                 });
 
-                if (changed.length > 0) { //fire away
-                    this._listener(changed, this);
-                }
+                return mutations;
             },
 
             disconnect: function() {
