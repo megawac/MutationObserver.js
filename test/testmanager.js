@@ -1,5 +1,3 @@
-
-
 QUnit.config.testTimeout = 1000;
 QUnit.config.autostart = false;//was having trouble with autostart
 

@@ -12,6 +12,13 @@ define([], function() {
         });
     };
 
+    var counter = 0;
+    var getId = function($ele) {
+        var id = $ele.nodeType === 3 ? $ele.nodeValue ://text node id is the text content
+                                        $ele.id || $ele.getAttribute("mut-id") || ++counter;
+        return id;
+    }
+
     var utils = {
         each: function(col, fn) {
             return arrayProto.forEach.call(col, fn);
@@ -26,9 +33,10 @@ define([], function() {
             return arrayProto.reduce.call(col, fn, memo);
         },
 
-        $randomChild: function(ele) {
+        $randomChild: function(ele, textNodes) {
+            var prop = textNodes ? "childNodes" : "children";
             if(ele instanceof $) ele = ele.get(Math.floor(ele.length * Math.random()));
-            return $(ele.children[Math.floor(ele.children.length * Math.random())]);
+            return $(ele[prop][Math.floor(ele[prop].length * Math.random())]);
         },
 
         $children: function(ele) {
@@ -42,10 +50,14 @@ define([], function() {
             return $a.map(function(node) {return $(node).get(0);});
         },
 
+        sameNode: function(node1, node2) {//from ./MutationObserver.js
+            return node1 && node2 && getId(node1) === getId(node2);
+        },
+
         //mutation helpers
         containsNode: function(col, node) {
             for (var i = 0; i < col.length; i++) {
-                if(node.isEqualNode(col[i])) return true;
+                if(utils.sameNode(node, col[i]) || node.isEqualNode(col[i])) return true;
             }
             return false;
         },

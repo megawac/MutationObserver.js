@@ -1,6 +1,5 @@
 define(["utils"], function(utils) {
     return function() {//tests
-
         QUnit.asyncTest("childList", function() {
             expect(9);
 
