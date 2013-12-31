@@ -33,9 +33,10 @@ define([], function() {
             return arrayProto.reduce.call(col, fn, memo);
         },
 
-        $randomChild: function(ele) {
+        $randomChild: function(ele, textNodes) {
+            var prop = textNodes ? "childNodes" : "children";
             if(ele instanceof $) ele = ele.get(Math.floor(ele.length * Math.random()));
-            return $(ele.childNodes[Math.floor(ele.childNodes.length * Math.random())]);
+            return $(ele[prop][Math.floor(ele[prop].length * Math.random())]);
         },
 
         $children: function(ele) {

@@ -20,6 +20,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
         var push = arrayProto.push;
         var foreach = arrayProto.forEach;
         var has = Object.hasOwnProperty;
+        var noop = function() {};
         var each = function (object, fn, bind){
             for (var key in object){
                 if (has.call(object, key)) fn.call(bind, object[key], key, object);
@@ -52,6 +53,9 @@ Goals: keep this async and batch changes (gotta use setInterval)
         };
 
         /*subtree and childlist helpers*/
+
+        //Assigns a unique id to each node to be watched in order to be able to compare cloned nodes
+        //TODO find a cleaner way eg some hash represnetnation
         var counter = 0;
         var getId = function($ele) {
             var id = $ele.nodeType === 3 ? $ele.nodeValue ://text node id is the text content
@@ -69,23 +73,25 @@ Goals: keep this async and batch changes (gotta use setInterval)
         var findIndex = function(set, node, from) {
             from = ~~from;
             for(var i = from,l=set.length; i<l; i++) {
-                if(sameNode(node, set[i])) return i + from;
+                if(sameNode(node, set[i])) return i;
             }
             return -1;
         };
 
         //set the ids for all of an elements children
-        var $id_kids = function(ele) {
+        var $id_kids = function(ele, deep) {
             if(ele.nodeType !== 3) {
                 foreach.call(ele.children, function(node) {//only iterate elements not text nodes
                     getId(node);
-                    $id_kids(node);
+                    if(deep) $id_kids(node, deep);
                 });
             }
-            
+            // return ele;
         };
 
         //findChildMutations: array of mutations so far, element, element clone, bool => array of mutations
+        // dfs comparision search of two nodes
+        // perf and function tests: http://jsbin.com/uhoVibU/4
         var findChildMutations = function(target, oldstate, deep) {
             var mutations = [];
             var add = function(node) {
@@ -94,94 +100,105 @@ Goals: keep this async and batch changes (gotta use setInterval)
                     target: node.parentElement,
                     addedNodes: [node]
                 }));
-                if(deep) $id_kids(node);
+                if(deep) $id_kids(node, deep);//ensure children of added ele have ids
             };
             var rem = function(node) {
                 mutations.push(new MutationRecord({
                     type: "childList",
-                    target: target,
+                    target: deep ? node.parentElement : target,//so target will appear correct on childList - more complicated on subtree
                     removedNodes: [node]
                 }));
-                if(deep) $id_kids(node);
             };
 
             var findMut = function(node, oldnode) {
-                var kids = node.childNodes;
-                var oldkids = oldnode.childNodes;
-                var klen = kids.length;
-                var olen = oldkids.length;
+                var $kids = node.childNodes;
+                var $oldkids = oldnode.childNodes;
+                var klen = $kids.length;
+                var olen = $oldkids.length;
                 
-                //id to i and j - optimization and nec search hash
+                //id to i and j search hash to prevent double checking an element
                 var id;
                 var map = {};
 
                 //array of potention conflict hashes
                 var conflicts = [];
-                var tot_conf;
-                var resolver = function(conflict) {
-                    var node = kids[conflict.i];
-                    var old = oldkids[conflict.j];
-                    if(Math.abs(conflict.i - conflicts.j) >= tot_conf) {
-                        if(conflict.o) {
-                            rem(node);
-                        } else {
-                            add(node);
+
+                //offsets
+                //var offset_add = 0;//nodes added since last resolve //we dont have to check added as these are handled before remove
+                var offset_rem = 0;//nodes removed since last resolve
+                /*
+                * There is no gaurentee that the same node will be returned for both added and removed nodes
+                * if the position has been shuffled
+                */
+                var resolver = function() {
+                    var counter = 0;//prevents same conflict being resolved twice
+                    var conflict;
+                    for (var i = 0, l = conflicts.length-1; i <= l; i++) {
+                        conflict = conflicts[i];
+                        //attempt to determine if there was node rearrangement... won't gaurentee all matches
+                        //also handles case where added/removed nodes cause nodes to be identified as conflicts
+                        if(counter < l && Math.abs(conflict.i - (conflict.j + offset_rem)) >= l) {
+                            add($kids[conflict.i]);//rearrangment ie removed then readded
+                            rem($kids[conflict.i]);
+                            counter++;
+                        } else if(deep) {//conflicts resolved - check deep
+                            findMut($kids[conflict.i], $oldkids[conflict.j]);
                         }
-                    } else {
-                        if(deep) findMut(node, old);
                     }
+                    offset_rem = conflicts.length = 0;
                 };
 
                 //iterate over both old and current child nodes at the same time
-                for(var i = 0, j = 0, k, l; i < klen || j < olen; ) {
-                    if(sameNode(kids[i], oldkids[j])) {
+                for(var i = 0, j = 0, p; i < klen || j < olen; ) {
+                    if(sameNode($kids[i], $oldkids[j])) {//simple expected case
                         if(deep) {//recurse
-                            findMut(kids[i], oldkids[j]);
+                            findMut($kids[i], $oldkids[j]);
                         }
 
                         //resolve conflicts
-                        tot_conf = conflicts.length-2;//so propogater will be found
-                        conflicts.forEach(resolver);
-                        conflicts = [];
+                        resolver();
 
                         i++;
                         j++;
                     } else {//lookahead until they are the same again or the end of children
                         if(i < klen) {
-                            id = getId(kids[i]);
-                            if((k = map[id] ? map[id].j : findIndex(oldkids, kids[i], j)) === -1) {
-                                add(kids[i]);
-                                i++;
-                                continue;
-                            } else {
-                                conflicts.push(map[id] = {i:i,j:k});//bit dirty
-                                i++;
+                            id = getId($kids[i]);
+                            //check id is in the location map otherwise do a indexOf search
+                            if(!has.call(map, id)) {//not already found
+                                if((p = findIndex($oldkids, $kids[i], j)) === -1) {
+                                    add($kids[i]);
+                                } else {
+                                    conflicts.push(map[id] = {//bit dirty
+                                        i: i,
+                                        j: p
+                                    });
+                                }
                             }
+                            i++;
                         }
 
                         if(j < olen) {
-                            id = getId(oldkids[j]);
-                            if((l = map[id] ? map[id].i : findIndex(kids, oldkids[j], i)) === -1) {
-                                rem(oldkids[j]);
-                                j++;
-                                continue;
-                            } else {
-                                conflicts.push(map[id] = {
-                                    i: l,
-                                    j: j,
-                                    o: true//old marker
-                                });
-                                j++;
+                            id = getId($oldkids[j]);
+                            if(!has.call(map, id)) {
+                                if((p = findIndex($kids, $oldkids[j], i)) === -1) {
+                                    rem($oldkids[j]);
+                                    offset_rem++;
+                                } else {
+                                    conflicts.push(map[id] = {
+                                        i: p,
+                                        j: j
+                                    });
+                                }
                             }
+                            j++;
                         }
                     }
                 }
+                resolver();
             };
             findMut(target, oldstate);
             return mutations;
         };
-
-        var noop = function() {};
 
         var patches = {
             attributes: function(element, filter) {
@@ -226,7 +243,7 @@ Goals: keep this async and batch changes (gotta use setInterval)
 
             childList: function(element, deep) {
                 deep = !!(deep && deep.deep);//observe will give an object
-                findChildMutations(element, element, deep);//set ids on element
+                $id_kids(element, deep);//set ids on element children
                 var $old = element.cloneNode(true);
                 return function() {
                     var changed = findChildMutations(element, $old, deep);
