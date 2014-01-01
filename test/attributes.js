@@ -1,7 +1,7 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("attributes", function() {
-            expect(2);
+        QUnit.asyncTest("attributes and attributeFilter", 2, function() {
+            var deferred = utils.asyncAutocomplete();
 
             var $test = $("<div>", {
                 "class": "test",
@@ -10,59 +10,39 @@ define(["utils"], function(utils) {
                     display: "inline"
                 }
             });
-            var teste = $test[0];
-            var called = 0;
+            var teste = $test.get(0);
+
             var observer = new MutationObserver(function(items, observer) {
                 equal(items.length, 3, "noticed attribute all changes");
-                called += 1;
             });
-
             observer.observe(teste, {
                 attributes: true
             });
 
-            //setting with jquery can cause multiple steps
-            teste.removeAttribute("id");
-            teste.setAttribute("data-test", 5231);
-            teste.style.display = "table";
-
-            setTimeout(function() {
-                ok(called === 1, "Got called " + called + " in 100 ms. Expected 1 calls.");
-                QUnit.start();
-            }, 100);
-        });
-
-        QUnit.asyncTest("attributeFilter", function() {
-            expect(2);
-
-            var $test = $("<div>", {
-                "class": "test",
-                "id": "ya",
-                css: {
-                    display: "inline"
-                }
-            });
-            var teste = $test[0];
-
-            var called = 0;
-            var observer = new MutationObserver(function(items, observer) {
+            var observer2 = new MutationObserver(function(items, observer) {
                 equal(items.length, 2, "noticed correct number of attribute changes");
-                called += 1;
             });
-
-            observer.observe(teste, {
+            observer2.observe(teste, {
                 attributes: true,
                 attributeFilter: ["id", "style"]
             });
 
+            //spec but throws on chrome 28
+            /*try {
+                var observer3 = new MutationObserver(function(items, observer) {
+                    equal(observer, observer3, "Watches attributes if attributeFilter defined and attributes omitted");
+                });
+                observer3.observe(teste, {
+                    attributeFilter: ["id", "style"]
+                });
+            } catch(o_o) {
+
+            }*/
+            
+            //setting with jquery can cause multiple steps
             teste.removeAttribute("id");
             teste.setAttribute("data-test", 5231);
             teste.style.display = "table";
-
-            setTimeout(function() {
-                ok(called === 1, "Got called " + called + " in 100 ms. Expected 1 calls.");
-                QUnit.start();
-            }, 100);
         });
     };
 });

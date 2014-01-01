@@ -1,8 +1,8 @@
 define(["utils"], function(utils) {
     return function() {//tests        
 
-        QUnit.asyncTest("subtree", function() {
-            expect(8);
+        QUnit.asyncTest("subtree", 7, function() {
+            var deferred = utils.asyncAutocomplete(300);
 
             var $test = $("<div><span></span></div>");
             var $teste = $test.find("span");
@@ -60,11 +60,6 @@ define(["utils"], function(utils) {
             }
             changes.addedNodes = added = utils.$makeArray(added);
             $teste.append(added);
-
-            setTimeout(function() {
-                ok(called === 4, "Got called " + called + " in 150 ms. Expected 4 calls.");
-                QUnit.start();
-            }, 150);
         });
     };
 });

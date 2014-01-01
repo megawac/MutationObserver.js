@@ -86,6 +86,17 @@ define([], function() {
                 changed.removed += record.removedNodes.length;
             });
             return changed;
+        },
+
+        asyncAutocomplete: function(delay) {
+            var deferred = $.Deferred();
+            deferred.done(function() {
+                QUnit.start();
+            });
+            setTimeout(function() {
+                deferred.resolve();
+            }, delay || 250);
+            return deferred;
         }
 
 

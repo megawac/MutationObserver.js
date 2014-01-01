@@ -1,7 +1,7 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("disconnect", 2, function() {
-            expect(2);
+        QUnit.asyncTest("disconnect", 1, function() {
+            var deferred = utils.asyncAutocomplete();
 
             var $test = $("<div>", {
                 "class": "test",
@@ -10,32 +10,24 @@ define(["utils"], function(utils) {
                     display: "inline"
                 }
             });
-            var called = 0;
+
             var observer = new MutationObserver(function(items, observer) {
-                if(called === 0) {
-                    ok(observer instanceof MutationObserver, "called once");
-                    observer.disconnect();
-                } else {
-                    ok(false, "called after disconnect!");
-                }
+                ok(observer instanceof MutationObserver, "called once");
+                observer.disconnect();
+
                 $test.attr("data-test", Math.random() * 9999);
-                $("<span>").appendTo($test);
-                called += 1;
+                $("<span><i>xxx</i></span>").appendTo($test);
             });
 
-            observer.observe($test[0], {
+            observer.observe($test.get(0), {
                 attributes: true,
-                childList: true
+                childList: true,
+                subtree: true
             });
 
-            $test.removeAttr("id");
-            $test.attr("data-test", Math.random() * 9999);
-            $test.css("display", "table");
-
-            setTimeout(function() {
-                ok(called === 1, "Got called " + called + " in 100 ms. Expected 1 calls.");
-                QUnit.start();
-            }, 100);
+            $test.removeAttr("id")
+                .attr("data-test", Math.random() * 9999)
+                .css("display", "table");
         });
     };
 });

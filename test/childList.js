@@ -1,7 +1,7 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("childList", function() {
-            expect(9);
+        QUnit.asyncTest("childList", 8, function() {
+            var deferred = utils.asyncAutocomplete(300);
 
             var $test = $("<div>", {
                 "class": "test",
@@ -70,11 +70,6 @@ define(["utils"], function(utils) {
             }
             changes.addedNodes = added = utils.$makeArray(added);
             $test.append(added);
-
-            setTimeout(function() {
-                ok(called === 5, "Got called " + called + " in 150 ms. Expected 5 calls.");
-                QUnit.start();
-            }, 150);
         });
     };
 });

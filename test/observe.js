@@ -1,7 +1,7 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("observe", function() {
-            expect(4);
+        QUnit.asyncTest("observe", 3, function() {
+            var deferred = utils.asyncAutocomplete();
 
             var $test = $("<div>", {
                 "class": "test",
@@ -71,11 +71,6 @@ define(["utils"], function(utils) {
             $("<span>", {value: "hi"}).appendTo(teste1);
 
             $("<a>", {href: "github.com"}).appendTo(teste2);
-
-            setTimeout(function() {
-                ok(called === 2, "Got called " + called + " in 100 ms. Expected 2 calls.");
-                QUnit.start();
-            }, 100);
         });
     };
 });
