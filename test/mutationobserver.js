@@ -1,7 +1,7 @@
-define([], function() {
+define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("Core", function() {
-            expect(4);
+        QUnit.asyncTest("Core", 7, function() {
+            var deferred = utils.asyncAutocomplete();
 
             var $test = $("<div>", {
                 'class': "test",
@@ -10,7 +10,7 @@ define([], function() {
                     display: 'inline'
                 }
             });
-            var teste = $test[0];
+            var teste = $test.get(0);
 
             /*var tobserver;
             try { //implementation dependent (fails on chrome passes on ff)
@@ -21,16 +21,27 @@ define([], function() {
             }
             ok(tobserver instanceof MutationObserver, "Can be instantiated without new keyword :o");
             */
-            var itemargs = [];
+
+            var mutations;
             var observer1 = new MutationObserver(function(items, observer) {
-                ok(items.length === 4, "observer1 was called correctly");
+                equal(items.length, 4, "observer1 was called correctly");
                 ok(observer instanceof MutationObserver, "Change event called with observer as second argument");
-                itemargs = items;
+
+                deepEqual(items, mutations, "Observer1 called with the same records from .takeRecords");
             });
 
             var observer2 = new MutationObserver(function(items, observer) {
-                ok(items.length === 4, "observer2 was called correctly on the same watched element");
-                deepEqual(items, itemargs, "Both observers called with the same changes");
+                equal(items.length, 4, "observer2 was called correctly on the same watched element");
+
+                deepEqual(items, mutations, "Both observers called with the same changes");
+            });
+
+            var observer3 = new MutationObserver(function(items, observer) {
+                equal(items.length, 3, "observer3 was called with only attributes mutations");
+            });
+
+            var observer4 = new MutationObserver(function(items, observer) {//should not be called
+                ok(false, "Take records successfully emptied record queue for observer4");
             });
 
             observer1.observe(teste, {
@@ -43,6 +54,14 @@ define([], function() {
                 childList: true
             });
 
+            observer3.observe(teste, {
+                attributes: true
+            });
+
+            observer4.observe(teste, {
+                attributes: true,
+                childList: true
+            });
 
             teste.removeAttribute("id");
             teste.setAttribute("data-test", Math.random() * 9999);
@@ -50,9 +69,8 @@ define([], function() {
 
             $("<a>", {href: "github.com", value: "github"}).appendTo(teste);
 
-            setTimeout(function() {
-                QUnit.start();
-            }, 100);
+            mutations = observer4.takeRecords();
+            equal(mutations.length, 4, ".takeRecords correctly return the correct number of mutations");
         });
     };
 });
