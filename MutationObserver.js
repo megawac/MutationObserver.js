@@ -229,10 +229,11 @@
 
             childList: function(element, deep) {
                 deep = !!(deep && deep.deep);//observe will give an object
-                var $old = clone(element, deep);
+                $id_kids(element, deep);//set ids on element children
+                var $old = element.cloneNode(true);
                 return function() {
                     var changed = findChildMutations(element, $old, deep);
-                    if(changed.length > 0) $old = clone(element, deep);//reclone if there've been changes
+                    if(changed.length > 0) $old = element.cloneNode(true);
                     return changed;
                 };
             }
