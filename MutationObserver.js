@@ -17,7 +17,8 @@
     if (!window.MutationObserver) {
         var arrayProto = Array.prototype;
         var push = arrayProto.push;
-        var foreach = arrayProto.forEach;
+        var indexOf = arrayProto.indexOf;
+        var map = arrayProto.map;
         var has = Object.hasOwnProperty;
         var noop = function() {};
         var each = function (object, fn, bind){
@@ -39,44 +40,29 @@
 
         /*subtree and childlist helpers*/
 
-        //Assigns a unique id to each node to be watched in order to be able to compare cloned nodes
-        //TODO find a cleaner way eg some hash represnetnation
+        //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
         var counter = 0;
         var getId = function($ele) {
-            var id = $ele.nodeType === 3 ? $ele.nodeValue ://text node id is the text content
-                                            $ele.id || $ele.getAttribute("mut-id") || ++counter;
-            if(id === counter) {
-                $ele.setAttribute("mut-id", id);
-            }
-            return id;
+            return $ele.id || ($ele._id = $ele._id || counter++);
         };
 
-        var sameNode = function(node1, node2) {
-            return node1 && node2 && getId(node1) === getId(node2);
-        };
-
-        var findIndex = function(set, node, from) {
-            from = ~~from;
-            for(var i = from,l=set.length; i<l; i++) {
-                if(sameNode(node, set[i])) return i;
-            }
-            return -1;
-        };
-
-        //set the ids for all of an elements children
-        var $id_kids = function(ele, deep) {
-            if(ele.nodeType !== 3) {//textNode
-                foreach.call(ele.children, function(node) {//only iterate elements not text nodes
-                    getId(node);
-                    if(deep) $id_kids(node, deep);
-                });
-            }
-            // return ele;
+        //clone an html node into a custom datastructure
+        // see https://gist.github.com/megawac/8201012
+        var clone = function (par, deep) {
+            var copy = function(par, top) {
+                return {
+                    node: par,
+                    kids: top || deep ? map.call(par.childNodes, function(node) {
+                        return copy(node);
+                    }) : null
+                };
+            };
+            return copy(par, true);
         };
 
         //findChildMutations: array of mutations so far, element, element clone, bool => array of mutations
         // dfs comparision search of two nodes
-        // perf and function tests: http://jsbin.com/uhoVibU/4
+        // this has to be as quick as possible
         var findChildMutations = function(target, oldstate, deep) {
             var mutations = [];
             var add = function(node) {
@@ -85,22 +71,23 @@
                     target: node.parentElement,
                     addedNodes: [node]
                 }));
-                if(deep) $id_kids(node, deep);//ensure children of added ele have ids
             };
-            var rem = function(node) {
+            var rem = function(node, tar) {//have to pass tar because node.parentElement will be null when removed
                 mutations.push(new MutationRecord({
                     type: "childList",
-                    target: deep ? node.parentElement : target,//so target will appear correct on childList - more complicated on subtree
+                    target: tar,
                     removedNodes: [node]
                 }));
             };
 
-            var findMut = function(node, oldnode) {
+            var findMut = function(node, old) {
                 var $kids = node.childNodes;
-                var $oldkids = oldnode.childNodes;
+                var $oldkids = old.kids;
                 var klen = $kids.length;
                 var olen = $oldkids.length;
-                
+
+                if(!olen && !klen) return;//both empty; clearly no changes
+
                 //id to i and j search hash to prevent double checking an element
                 var id;
                 var map = {};
@@ -108,7 +95,7 @@
                 //array of potention conflict hashes
                 var conflicts = [];
 
-                //offsets
+                //offsets since last resolve. Can also solve the problem with a continue but we exect this method to be faster as i and j should eventually correlate
                 //var offset_add = 0;//nodes added since last resolve //we dont have to check added as these are handled before remove
                 var offset_rem = 0;//nodes removed since last resolve
                 /*
@@ -124,53 +111,62 @@
                         //also handles case where added/removed nodes cause nodes to be identified as conflicts
                         if(counter < l && Math.abs(conflict.i - (conflict.j + offset_rem)) >= l) {
                             add($kids[conflict.i]);//rearrangment ie removed then readded
-                            rem($kids[conflict.i]);
+                            rem($kids[conflict.i], old.node);
                             counter++;
                         } else if(deep) {//conflicts resolved - check deep
                             findMut($kids[conflict.i], $oldkids[conflict.j]);
                         }
                     }
-                    offset_rem = conflicts.length = 0;
+                    offset_rem = conflicts.length = 0;//clear conflicts
                 };
 
+                var $cur, $old;//current and old nodes
+
                 //iterate over both old and current child nodes at the same time
-                for(var i = 0, j = 0, p; i < klen || j < olen; ) {
-                    if(sameNode($kids[i], $oldkids[j])) {//simple expected case
+                for(var i = 0, j = 0, idx; i < klen || j < olen; ) {
+                    //current and old nodes at the indexs
+                    $cur = $kids[i];
+                    $old = $oldkids[j] && $oldkids[j].node;
+
+                    if($cur === $old) {//simple expected case - needs to be as fast as possible
                         if(deep) {//recurse
                             findMut($kids[i], $oldkids[j]);
                         }
 
                         //resolve conflicts
-                        resolver();
+                        if(conflicts.length) resolver();
 
                         i++;
                         j++;
                     } else {//lookahead until they are the same again or the end of children
-                        if(i < klen) {
-                            id = getId($kids[i]);
+                        if($cur) {
+                            id = getId($cur);
                             //check id is in the location map otherwise do a indexOf search
                             if(!has.call(map, id)) {//not already found
-                                if((p = findIndex($oldkids, $kids[i], j)) === -1) {
-                                    add($kids[i]);
+                                if((idx = indexOf.call($oldkids, $cur, j)) === -1) {
+                                    add($cur);
                                 } else {
-                                    conflicts.push(map[id] = {//bit dirty
+                                    map[id] = true;
+                                    conflicts.push({//bit dirty
                                         i: i,
-                                        j: p
+                                        j: idx
                                     });
                                 }
                             }
                             i++;
+                            //continue;
                         }
 
-                        if(j < olen) {
-                            id = getId($oldkids[j]);
+                        if($old) {
+                            id = getId($old);
                             if(!has.call(map, id)) {
-                                if((p = findIndex($kids, $oldkids[j], i)) === -1) {
-                                    rem($oldkids[j]);
+                                if((idx = indexOf.call($kids, $old, i)) === -1) {
+                                    rem($old, old.node);
                                     offset_rem++;
                                 } else {
-                                    conflicts.push(map[id] = {
-                                        i: p,
+                                    map[id] = true;
+                                    conflicts.push({
+                                        i: idx,
                                         j: j
                                     });
                                 }
@@ -179,7 +175,7 @@
                         }
                     }
                 }
-                resolver();
+                if(conflicts.length) resolver();
             };
             findMut(target, oldstate);
             return mutations;
@@ -229,11 +225,10 @@
 
             childList: function(element, deep) {
                 deep = !!(deep && deep.deep);//observe will give an object
-                $id_kids(element, deep);//set ids on element children
-                var $old = element.cloneNode(true);
+                var $old = clone(element, deep);
                 return function() {
                     var changed = findChildMutations(element, $old, deep);
-                    if(changed.length > 0) $old = element.cloneNode(true);
+                    if(changed.length > 0) $old = clone(element, deep);//reclone if there've been changes
                     return changed;
                 };
             }
