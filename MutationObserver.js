@@ -185,6 +185,7 @@
             return mutations;
         };
 
+        //patches return a function which return an array of mutations. If nothing is returned its return discarded at runtime
         var patches = {
             attributes: function(element, filter) {
                 if(filter && filter.reduce) {
@@ -228,11 +229,10 @@
 
             childList: function(element, deep) {
                 deep = !!(deep && deep.deep);//observe will give an object
-                $id_kids(element, deep);//set ids on element children
-                var $old = element.cloneNode(true);
+                var $old = clone(element, deep);
                 return function() {
                     var changed = findChildMutations(element, $old, deep);
-                    $old = element.cloneNode(true);
+                    if(changed.length > 0) $old = clone(element, deep);//reclone if there've been changes
                     return changed;
                 };
             }
@@ -257,7 +257,7 @@
             };
 
             self._watched = [];
-            self._intervals = [setInterval(check, self.options.period)];
+            self._interval = setInterval(check, self.options.period);
         };
 
         MutationRecord.prototype = {
@@ -299,15 +299,14 @@
                 var mutations = [];
 
                 this._watched.forEach(function(watcher) {
-                    var data = watcher();//expected array
-                    if(data) push.apply(mutations, data);
+                    push.apply(mutations, watcher());//faster than concat when b is small. We expect no mutations most of the time
                 });
 
                 return mutations;
             },
 
             disconnect: function() {
-                this._intervals.forEach(function(t) {clearInterval(t);});//ie throws a fit if u dont wrap clear
+                clearInterval(this._interval);
             }
         };
     }
