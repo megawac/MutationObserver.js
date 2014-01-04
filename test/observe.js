@@ -50,6 +50,8 @@ define(["utils"], function(utils) {
                     }) && items.some(function(item) {
                         return item.type === "attributes";
                     }), "Can watch multiple mutationobserverinit properties");
+                    
+                    //test3
                     $test2.html("<strong>notta</strong>");
                 }
 

@@ -19,7 +19,7 @@ define(["utils"], function(utils) {
 
             var n = 10;
             var called = 0;
-            var $old,changed,added,i;
+            var $old,changed,added,i, $text;
             var observer = new MutationObserver(function(items, observer) {
                 if(called === 0) {
                     ok(utils.expectedMutations(items, changes), "childList notices all added items");
@@ -56,6 +56,10 @@ define(["utils"], function(utils) {
                 } else if (called === 4) {
                     changed = utils.countMutations(items);
                     ok(changed.removed === 1 && changed.added === 2, "works with mixing setting html and text");
+                    $text = $test.get(0).childNodes[1];
+                    $text.nodeValue = "test";
+                } else if(called === 5) {
+                    ok(false, "Changing textNode value does not add a mutation");
                 }
                 called += 1;
             });

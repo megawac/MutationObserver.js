@@ -1,7 +1,7 @@
 define(["utils"], function(utils) {
     return function() {//tests        
 
-        QUnit.asyncTest("subtree", 7, function() {
+        QUnit.asyncTest("subtree", 8, function() {
             var deferred = utils.asyncAutocomplete(300);
 
             var $test = $("<div><span></span></div>");
@@ -14,9 +14,8 @@ define(["utils"], function(utils) {
 
             var n = 10;
             var called = 0;
+            var $tar;
             var observer = new MutationObserver(function(items, observer) {
-                var $tar;
-
                 if(called === 0) {
                     ok(utils.expectedMutations(items, changes), "childList + subtree notices all nested added items");
                     ok(items.every(function(item) { return item.target === $teste[0]; }), "subtree is called with correct target");
@@ -45,6 +44,7 @@ define(["utils"], function(utils) {
                     };
                 } else if(called === 3) {
                     ok(utils.expectedMutations(items, changes), "Works with setting the text of a nested element");
+                    equal(items.filter(function(item){return item.removedNodes.length > 0;})[0].target, $tar.get(0), "Removed subtree elements are called with expected target");
                 }
                 called += 1;
             });

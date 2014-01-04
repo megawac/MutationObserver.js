@@ -3,8 +3,6 @@ QUnit.config.autostart = false;//was having trouble with autostart
 
 //Simple test manager to delete window.MutationObserver after the original test runs
 $(function() {
-    var isPhantom = /phantomjs/i.test(navigator.userAgent);
-
     curl(["tests.js", "perf.js"], function(MutationObserverTests, perf) {
 
         QUnit.start();
@@ -17,12 +15,15 @@ $(function() {
             window.WebkitMutationObserver = window.MutationObserver = null;//so poly goes in
 
             yepnope.injectJs("../MutationObserver.js", function() {
-                MutationObserverTests("MutationObserver-Shim");
 
                 var custom = window.MutationObserver;
 
-                if(native != custom)//chrome bug
+                if(native != custom) {//webkit doesnt allow mutation observer to be deleted
+                    MutationObserverTests("MutationObserver-Shim");
                     perf(custom, native);
+                } else {
+                    alert("can't test shim because webkit does not allow MutationObserver to be deleted");
+                }
             });
         };
 
