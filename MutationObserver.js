@@ -19,6 +19,7 @@
         var push = arrayProto.push;
         var indexOf = arrayProto.indexOf;
         var map = arrayProto.map;
+        var foreach = arrayProto.forEach;
         // var reduce = arrayProto.reduce;
 
         // var has = Object.hasOwnProperty;
@@ -345,7 +346,7 @@
             },
 
             disconnect: function() {
-                clearInterval(this._interval);
+                this._watched = [];//just clear the stuff being observed
             }
         };
     }
