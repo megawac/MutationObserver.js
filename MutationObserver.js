@@ -267,7 +267,7 @@
             },
 
             childList: function(element, deep) {
-                deep = !!(deep && deep.deep);//observe will give an object
+                deep = deep === patches;//observe will give the patches if we should watch subtree
                 $id_kids(element, deep);//set ids on element children
                 var $old = element.cloneNode(true);
                 return function() {
