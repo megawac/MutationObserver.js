@@ -89,8 +89,9 @@
                 if(!olen && !klen) return;//both empty; clearly no changes
 
                 //id to i and j search hash to prevent double checking an element
-                var id;
                 var map = {};
+                var id;
+                var idx;//index of a moved or inserted element
 
                 //array of potention conflict hashes
                 var conflicts = [];
@@ -98,9 +99,10 @@
                 //offsets since last resolve. Can also solve the problem with a continue but we exect this method to be faster as i and j should eventually correlate
                 //var offset_add = 0;//nodes added since last resolve //we dont have to check added as these are handled before remove
                 var offset_rem = 0;//nodes removed since last resolve
+
                 /*
                 * There is no gaurentee that the same node will be returned for both added and removed nodes
-                * if the position has been shuffled
+                * if the positions have been shuffled.
                 */
                 var resolver = function() {
                     var counter = 0;//prevents same conflict being resolved twice
@@ -120,17 +122,19 @@
                     offset_rem = conflicts.length = 0;//clear conflicts
                 };
 
-                var $cur, $old;//current and old nodes
+                //current and old nodes
+                var $cur;
+                var $old;
 
                 //iterate over both old and current child nodes at the same time
-                for(var i = 0, j = 0, idx; i < klen || j < olen; ) {
+                for(var i = 0, j = 0; i < klen || j < olen; ) {
                     //current and old nodes at the indexs
                     $cur = $kids[i];
-                    $old = $oldkids[j] && $oldkids[j].node;
+                    $old = j < olen && $oldkids[j].node;
 
                     if($cur === $old) {//simple expected case - needs to be as fast as possible
                         if(deep) {//recurse
-                            findMut($kids[i], $oldkids[j]);
+                            findMut($cur, $oldkids[j]);
                         }
 
                         //resolve conflicts
@@ -138,16 +142,16 @@
 
                         i++;
                         j++;
-                    } else {//lookahead until they are the same again or the end of children
+                    } else {//(uncommon case) lookahead until they are the same again or the end of children
                         if($cur) {
                             id = getId($cur);
                             //check id is in the location map otherwise do a indexOf search
                             if(!has.call(map, id)) {//not already found
                                 if((idx = indexOf.call($oldkids, $cur, j)) === -1) {
-                                    add($cur);
+                                    add($cur);//$cur is a new node
                                 } else {
-                                    map[id] = true;
-                                    conflicts.push({//bit dirty
+                                    map[id] = true;//mark id as found
+                                    conflicts.push({//add conflict
                                         i: i,
                                         j: idx
                                     });
