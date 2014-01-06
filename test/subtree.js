@@ -60,6 +60,10 @@ define(["utils"], function(utils) {
             }
             changes.addedNodes = added = utils.$makeArray(added);
             $teste.append(added);
+
+            deferred.done(function() {
+                observer.disconnect();
+            });
         });
     };
 });

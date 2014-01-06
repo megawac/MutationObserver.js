@@ -59,7 +59,7 @@ define(["utils"], function(utils) {
                     $text = $test.get(0).childNodes[1];
                     $text.nodeValue = "test";
                 } else if(called === 5) {
-                    ok(false, "Changing textNode value does not add a mutation");
+                    ok(false, "Changing textNode value (via .nodeValue = xxx) should not add a mutation");
                 }
                 called += 1;
             });
@@ -74,6 +74,10 @@ define(["utils"], function(utils) {
             }
             changes.addedNodes = added = utils.$makeArray(added);
             $test.append(added);
+
+            deferred.done(function() {
+                observer.disconnect();
+            });
         });
     };
 });

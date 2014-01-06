@@ -59,13 +59,13 @@ define([], function() {
                     observer.takeRecords();
                 });
 
-                if(Native) {
+                /*if(Native) {
                     var observer2 = new Native(function(items, observer) {});
                     observer2.observe(test.$ele.get(0), context);
                     JSLitmus.test("Native MutationObserver: " + description, function() {
                         observer2.takeRecords();
                     });
-                }
+                }*/
             });
         });
     }

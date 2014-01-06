@@ -33,10 +33,14 @@ define([], function() {
             return arrayProto.reduce.call(col, fn, memo);
         },
 
+        getRandom: function(col) {
+            return col[Math.floor(col.length * Math.random())];
+        },
+
         $randomChild: function(ele, textNodes) {
             var prop = textNodes ? "childNodes" : "children";
-            if(ele instanceof $) ele = ele.get(Math.floor(ele.length * Math.random()));
-            return $(ele[prop][Math.floor(ele[prop].length * Math.random())]);
+            if(ele instanceof $) ele = utils.getRandom(ele);
+            return $(utils.getRandom(ele[prop]));
         },
 
         $children: function(ele) {

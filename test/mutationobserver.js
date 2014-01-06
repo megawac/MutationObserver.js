@@ -71,6 +71,13 @@ define(["utils"], function(utils) {
 
             mutations = observer4.takeRecords();
             equal(mutations.length, 4, ".takeRecords correctly return the correct number of mutations");
+
+            deferred.done(function() {
+                observer1.disconnect();
+                observer2.disconnect();
+                observer3.disconnect();
+                observer4.disconnect();
+            });
         });
     };
 });

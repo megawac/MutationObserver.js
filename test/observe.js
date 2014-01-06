@@ -36,8 +36,7 @@ define(["utils"], function(utils) {
                         if(obj.test2) obj.test2 += n;
                         else obj.test2 = n;
                     } else {
-                        console.error("wtf is this:");
-                        console.log(item);
+                        console.error("wtf is this:", item);
                     }
                     return obj;
                 }, {});
@@ -73,6 +72,10 @@ define(["utils"], function(utils) {
             $("<span>", {value: "hi"}).appendTo(teste1);
 
             $("<a>", {href: "github.com"}).appendTo(teste2);
+
+            deferred.done(function() {
+                observer.disconnect();
+            });
         });
     };
 });
