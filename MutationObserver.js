@@ -13,29 +13,68 @@
         -https://bugs.webkit.org/show_bug.cgi?id=85161
         -https://bugzilla.mozilla.org/show_bug.cgi?id=749920
     */
-    window.MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-    if (!window.MutationObserver) {
+    var MutationObserver = window.MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+    if (!MutationObserver) {
         var arrayProto = Array.prototype;
         var push = arrayProto.push;
-        var foreach = arrayProto.forEach;
-        var has = Object.hasOwnProperty;
-        var noop = function() {};
-        var each = function (object, fn, bind){
-            for (var key in object){
-                if (has.call(object, key)) fn.call(bind, object[key], key, object);
+        var indexOf = arrayProto.indexOf;
+        var map = arrayProto.map;
+        // var reduce = arrayProto.reduce;
+
+        // var has = Object.hasOwnProperty;
+        var has = function(obj, prop) { //instead of has.call(obj, prop)
+            return typeof obj[prop] !== "undefined";
+        };
+        var forIn = function (obj, fn/*, bind*/) {//currently not using bind
+            // if(bind) fn = fn.bind(bind);//hoist optimization
+            for (var prop in obj){
+                //minor optimization to allow for mark deletions instead of direct deletetions
+                if (typeof obj[prop] !== "undefined") fn(obj[prop], prop, obj);
             }
         };
+
+        //MutationObserver property names (mainly for minimization)
+        var _childList = "childList";
+        var _attributes = "attributes";
+
+        /* public api code */
+        var MutationRecord = window.MutationRecord = function(data) {
+            var settings = {
+                target: null,
+                type: null,
+                addedNodes: [],
+                removedNodes: [],
+                attributeName: null,
+                oldValue: null
+            };
+            forIn(data, function(v,k) {
+                settings[k] = v;
+            });
+            return settings;
+        };
+
+        /* attributes + attributeFilter helpers */
 
         var getAttributes = function($e, filter) { //store dynamic attributes in a object
             var attrs = {};
             var attributes = $e.attributes;
-            for (var i = attributes.length - 1; i >= 0; i--) {
-                if(!filter || filter[attributes[i].name]) {
-                    attrs[attributes[i].name] = attributes[i].value;
+            var attr;
+            for (var i = 0, l = attributes.length; i < l; i++) {
+                attr = attributes[i];
+                if(!filter || has(filter, attr.name)) {
+                    attrs[attr.name] = attr.value;
                 }
             }
             return attrs;
+            //Alternative slower code:
+            /*return reduce.call($e.attributes, function(memo, attr) {
+                if(!filter || has(filter, attr.name)) {
+                    memo[attr.name] = attr.value;
+                }
+                return memo;
+            }, {});*/
         };
+
 
         /*subtree and childlist helpers*/
 
@@ -186,46 +225,45 @@
         };
 
         //patches return a function which return an array of mutations. If nothing is returned its return discarded at runtime
+        //these functions are called many times a second - should optimize for no mutations
         var patches = {
             attributes: function(element, filter) {
                 if(filter && filter.reduce) {
-                    filter = filter.reduce(function(a, b) {a[b] = true; return a;}, {});
+                    filter = filter.reduce(function(a, b) {a[b] = true; return a;}, {});//convert array to hash for faster lookup
                 } else {
                     filter = null;
                 }
                 var $old = getAttributes(element, filter);
                 return function() {
                     var changed = [];
-                    var old = $old;
-                    var attr = getAttributes(element, filter);
-                    $old = attr;
+                    var $attr = getAttributes(element, filter);
 
-                    each(attr, function(val, prop) {
-                        if (old[prop] !== val) {
-                            changed.push(new MutationRecord({
+                    //simple object diff on two objects with all plain vals
+                    forIn($attr, function(val, prop) {
+                        if ($old[prop] !== val) {
+                            changed.push(MutationRecord({
                                 target: element,
-                                type: "attributes",
+                                type: _attributes,
                                 attributeName: prop,
-                                oldValue: old[prop]
+                                oldValue: $old[prop]
                             }));
                         }
-                        delete old[prop];
+                        delete $old[prop];
                     });
-                    each(old, function(val, prop) {
-                        changed.push(new MutationRecord({
+                    forIn($old, function(val, prop) {//clearly rest are mutations
+                        changed.push(MutationRecord({
                             target: element,
-                            type: "attributes",
+                            type: _attributes,
                             attributeName: prop,
-                            oldValue: old[prop]
+                            oldValue: val
                         }));
                     });
+
+                    $old = $attr;
+
                     return changed;
                 };
             },
-
-            attributeFilter: noop,
-            attributeOldValue: noop,
-            subtree: noop,
 
             childList: function(element, deep) {
                 deep = !!(deep && deep.deep);//observe will give an object
@@ -237,19 +275,19 @@
                     return changed;
                 };
             }
+
+            // attributeFilter: noop,
+            // attributeOldValue: noop,
+            // characterData: noop,
+            // characterDataOldValue: noop,
+            // subtree: noop,
         };
 
-        /* public api code */
-        var MutationRecord = window.MutationRecord = function(data) {
-            each(data, function(v,k) {
-                this[k] = v;
-            }, this);
-        };
-
-        var MutationObserver = window.MutationObserver = function(listener) {
+        MutationObserver = window.MutationObserver = function(listener) {
             var self = this;
             //http://dom.spec.whatwg.org/#queuing-a-mutation-record
             var check = function() {
+                //do a check if _watched is empty?
                 var mutations = self.takeRecords();
 
                 if (mutations.length > 0) { //fire away
@@ -261,14 +299,6 @@
             self._interval = setInterval(check, self.options.period);
         };
 
-        MutationRecord.prototype = {
-            target: null,
-            type: null,
-            addedNodes: [],
-            removedNodes: [],
-            attributeName: null,
-            oldValue: null
-        };
 
         MutationObserver.prototype = {
             options: {
@@ -277,19 +307,21 @@
 
             observe: function(target, config) {
                 var self = this;
+                var patch;
 
                 //see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
                 //not going to throw here but going to follow the spec config sets
                 if(config.attributeFilter || config.attributeOldValue) {
-                    config.attributes = config.attributeFilter || true;
+                    config[_attributes] = config.attributeFilter || true;
                 }
-                if(config.subtree && config.childList) {
-                    config.childList = {deep:true};
+                //some browsers are strict in their implementation that config.subtree and childList must be set together. We don't care - spec doesn't specify
+                if(config.subtree/*&& has(config, _childList)*/) {
+                    config[_childList] = patches;
                 }
 
-                each(config, function(use, type) {
-                    if (use) {
-                        var patch = patches[type].call(self, target, use);
+                forIn(config, function(use, type) {
+                    if (use && has(patches, type)) {
+                        patch = patches[type].call(self, target, use);
                         if(patch) self._watched.push(patch);//patch will be a function or falsy if we shouldnt watch
                     }
                 });
@@ -298,10 +330,16 @@
             //finds mutations since last check and empties the "record queue" i.e. mutations will only be found once
             takeRecords: function() {
                 var mutations = [];
+                var watched = this._watched;
+                var res;
 
-                this._watched.forEach(function(watcher) {
-                    push.apply(mutations, watcher());//faster than concat when b is small. We expect no mutations most of the time
-                });
+                // this._watched.forEach(function(watcher) {
+                //     push.apply(mutations, watcher());//faster than concat when b is small. We expect no mutations most of the time
+                // });
+                for(var i = 0, l = watched.length; i < l; i++) {
+                    res = watched[i]();
+                    if(res.length) push.apply(mutations, res);
+                }
 
                 return mutations;
             },
