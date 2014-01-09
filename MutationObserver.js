@@ -335,12 +335,9 @@
                 var watched = this._watched;
                 var res;
 
-                // this._watched.forEach(function(watcher) {
-                //     push.apply(mutations, watcher());//faster than concat when b is small. We expect no mutations most of the time
-                // });
                 for(var i = 0, l = watched.length; i < l; i++) {
                     res = watched[i]();
-                    if(res.length) push.apply(mutations, res);
+                    if(res.length) push.apply(mutations, res);//expect no mutations most of the time
                 }
 
                 return mutations;
