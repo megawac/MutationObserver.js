@@ -5,8 +5,6 @@ QUnit.config.autostart = false;//was having trouble with autostart
 $(function() {
     curl(["tests.js", "perf.js"], function(MutationObserverTests, perf) {
 
-        QUnit.start();
-
         var test2 = function(context) {
             if(context && context.name !== "MutationObserver") return;
 
