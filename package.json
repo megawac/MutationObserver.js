@@ -1,21 +1,33 @@
 {
-  "name" : "MutationObserver",
-  "description" : "Mootools MutationObserver polyfill (no addons)",
-  "keywords" : ["mutation observer"],
-  "author" : "Graeme Yeates <yeatesgraeme@gmail.com>",
-  "repository" : {"type": "git", "url": "git@github.com:megawac/MutationObserver.js.git"},
-  "main" : "MutationObserver.js",
-  "version" : "0.0.1",
+  "name": "MutationObserver-Shim",
+  "short name": "mutationobserver",
+  "description": "MutationObserver shim",
+  "keywords": [
+    "mutation observer MutationObserver"
+  ],
+  "authors": [{
+    "name": "Graeme Yeates",
+    "email": "yeatesgraeme@gmail.com"
+  }],
+  "repository": {
+    "type": "git",
+    "git": "git@github.com:megawac/MutationObserver.js.git",
+    "url": "http://github.com/megawac/MutationObserver.js"
+  },
+  "main": "MutationObserver.js",
+  "version": "0.0.1",
   "devDependencies": {
-    "phantomjs": ">= 1.9.0"
+    "phantomjs": ">= 1.9",
+    "grunt": ">= 0.4",
+    "grunt-contrib-uglify": ">= 0.2"
   },
   "scripts": {
     "test": "phantomjs test/vendor/runner.js test/index.html 5"
   },
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "https://raw.github.com/jashkenas/underscore/master/LICENSE"
-    }
-  ]
+  "license": {
+    "type": "WTFPL",
+    "version": "v2 2004",
+    "url": "http://www.wtfpl.net/",
+    "details": "Feel free to use/modify/redistribute my code however the fuck you want, with or without credit"
+  }
 }
