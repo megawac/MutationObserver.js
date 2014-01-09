@@ -4,5 +4,15 @@
         "MutationObserver": true,
         "webkitMutationObserver": true
     },
-    "quotmark": "double"
+
+    //style
+    "quotmark": "double",
+    "newcap": false,
+    "immed": true,
+    "trailing": true,
+
+    //syntax
+    "es3": true,
+    "undef": true,
+    "unused": true
 }
