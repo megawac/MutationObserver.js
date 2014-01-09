@@ -66,6 +66,7 @@ module.exports = function(grunt) {
                             browserName: "safari",
                             version: "5"
                         }
+                    ]
                 }
             }
         },
