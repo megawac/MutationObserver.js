@@ -286,18 +286,15 @@
 
         MutationObserver = window.MutationObserver = function(listener) {
             var self = this;
-            //http://dom.spec.whatwg.org/#queuing-a-mutation-record
-            var check = function() {
+            self._watched = [];
+            self._checker = function() {
                 //do a check if _watched is empty?
                 var mutations = self.takeRecords();
 
-                if (mutations.length > 0) { //fire away
-                    listener(mutations, self);
+                if (mutations.length) { //fire away
+                    listener.call(self, mutations, self);//call is not spec but consistent with other implementations
                 }
             };
-
-            self._watched = [];
-            self._interval = setInterval(check, self.options.period);
         };
 
 
@@ -326,6 +323,10 @@
                         if(patch) self._watched.push(patch);//patch will be a function or falsy if we shouldnt watch
                     }
                 });
+                
+                if(!self._interval) {
+                    this._interval = setInterval(this._checker, self.options.period);
+                }
             },
 
             //finds mutations since last check and empties the "record queue" i.e. mutations will only be found once
@@ -347,6 +348,8 @@
 
             disconnect: function() {
                 this._watched = [];//just clear the stuff being observed
+                clearInterval(this._interval);//ready for garbage collection
+                this._interval = null;
             }
         };
     }
