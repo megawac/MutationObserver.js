@@ -19,7 +19,6 @@
         var push = arrayProto.push;
         var indexOf = arrayProto.indexOf;
         var map = arrayProto.map;
-        var foreach = arrayProto.forEach;
         // var reduce = arrayProto.reduce;
 
         // var has = Object.hasOwnProperty;
@@ -297,12 +296,9 @@
             };
         };
 
+        MutationObserver._period = 40;//Period to check for mutations (25 times/sec)
 
         MutationObserver.prototype = {
-            options: {
-                period: 25 //recheck interval
-            },
-
             observe: function(target, config) {
                 var self = this;
                 var patch;
@@ -325,7 +321,7 @@
                 });
                 
                 if(!self._interval) {
-                    this._interval = setInterval(this._checker, self.options.period);
+                    this._interval = setInterval(this._checker, MutationObserver._period);
                 }
             },
 
