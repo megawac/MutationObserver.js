@@ -5,10 +5,12 @@
   "keywords": [
     "mutation observer MutationObserver"
   ],
-  "authors": [{
-    "name": "Graeme Yeates",
-    "email": "yeatesgraeme@gmail.com"
-  }],
+  "authors": [
+    {
+      "name": "Graeme Yeates",
+      "email": "yeatesgraeme@gmail.com"
+    }
+  ],
   "repository": {
     "type": "git",
     "git": "git@github.com:megawac/MutationObserver.js.git",
@@ -17,12 +19,16 @@
   "main": "MutationObserver.js",
   "version": "0.1.0",
   "devDependencies": {
-    "phantomjs": ">= 1.9",
-    "grunt": ">= 0.4",
-    "grunt-contrib-uglify": ">= 0.2"
+    "phantomjs": "1.9.x",
+    "grunt": "~0.4.2",
+    "grunt-contrib-uglify": ">= 0.2",
+    "grunt-saucelabs": "4.1.x",
+    "grunt-contrib-jshint": ">= 0.8",
+    "grunt-contrib-qunit": "0.3.x",
+    "grunt-contrib-connect": "0.6.x"
   },
   "scripts": {
-    "test": "phantomjs test/vendor/runner.js test/index.html 5"
+    "test": "grunt test"
   },
   "license": {
     "type": "WTFPL",

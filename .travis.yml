@@ -1,7 +1,15 @@
 language: node_js
 node_js:
-  - "0.11"
-  - "0.10"
-  - "0.8"
+- '0.11'
+- '0.8'
 notifications:
   email: false
+addons:
+  sauce_connect:
+    username: mutationobserver
+env:
+  global:
+    - secure: ieS2Gp2pEhAXkHIZ5Mh8DMHh/TOkdkhTFYQWSPciqKal56kgM8uH5I9uLDtatQ6jmLrIfy4PGIzlXy60CxN2Am49AZciKqg1W5bd/3TCh9r/C0dVac0lBexe4ohrND9P0GIka/yLhyQLSRSMgnv2d+kAYYC5jIMkeC6srD81xoM=
+before_script:
+  - npm install -g grunt-cli
+  - git submodule update --init --recursive

@@ -1,9 +1,5 @@
 {
-    "globals": {
-        "MutationRecord": true,
-        "MutationObserver": true,
-        "webkitMutationObserver": true
-    },
+    "browser": true,
 
     //style
     "quotmark": "double",
