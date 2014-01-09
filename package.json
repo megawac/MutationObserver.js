@@ -28,7 +28,7 @@
     "grunt-contrib-connect": "0.6.x"
   },
   "scripts": {
-    "test": "grunt test"
+    "test": "grunt test --verbose"
   },
   "license": {
     "type": "WTFPL",

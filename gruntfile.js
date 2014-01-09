@@ -45,30 +45,27 @@ module.exports = function(grunt) {
                     tags: ["master"],
                     urls: ["http://localhost:8000/test/index.html"],
                     testname: "MutationObserver QUnit tests",
-                    browsers: [{
+                    browsers: [
+                        {//webkitMutationObserver -> MutationObserver
+                            browserName: "chrome",
+                            platform: "XP",
+                            version: "26"
+                        }, {//supported
                             browserName: "firefox",
-                            version: "19",
-                            platform: "XP"
-                        }, {
-                            browserName: "chrome",
-                            platform: "XP"
-                        }, {
-                            browserName: "chrome",
                             platform: "linux"
-                        }, {
+                        }, {//not supported
                             browserName: "internet explorer",
-                            platform: "WIN8",
                             version: "10"
-                        }, {
+                        }, {//not supported
                             browserName: "internet explorer",
-                            platform: "VISTA",
                             version: "9"
-                        }, {
+                        }, {//not supported
                             browserName: "opera",
-                            platform: "Windows 2008",
                             version: "12"
+                        }, {//not supported
+                            browserName: "safari",
+                            version: "5"
                         }
-                    ]
                 }
             }
         },

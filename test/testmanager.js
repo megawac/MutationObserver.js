@@ -1,6 +1,15 @@
 QUnit.config.testTimeout = 1000;
 QUnit.config.autostart = false;//was having trouble with autostart
 
+QUnit.testSkip = function() {//http://stackoverflow.com/questions/13748129/skipping-a-test-in-qunit
+   QUnit.test(arguments[0] + ' (SKIPPED)', 0, function() {
+       var li = document.getElementById(QUnit.config.current.id);
+       QUnit.done(function() {
+           li.style.background = '#FFFF99';
+       });
+   });
+};
+
 //Simple test manager to delete window.MutationObserver after the original test runs
 $(function() {
     curl(["tests.js", "perf.js"], function(MutationObserverTests, perf) {
@@ -20,7 +29,8 @@ $(function() {
                     MutationObserverTests("MutationObserver-Shim");
                     perf(custom, native);
                 } else {
-                    alert("can't test shim because webkit does not allow MutationObserver to be deleted");
+                    QUnit.module("MutationObserver-Shim");
+                    QUnit.testSkip("Can't test shim in this browser as we cannot delete the native MutationObserver. Some implementations protect it --- lookin at you webkit");
                 }
             });
         };
