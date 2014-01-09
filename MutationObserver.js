@@ -32,10 +32,20 @@
                 if (typeof obj[prop] !== "undefined") fn(obj[prop], prop, obj);
             }
         };
+        //indexOf for collection using a comparitor
+        var findIndex = function(set, comparitor, from) {
+            for(var i = ~~from, l=set.length; i<l; i++) {
+                if(comparitor(set[i])) return i;
+            }
+            return -1;
+        };
 
         //MutationObserver property names (mainly for minimization)
         var _childList = "childList";
         var _attributes = "attributes";
+        
+        //id property
+        var expando = "mo_id";
 
         /* public api code */
         var MutationRecord = window.MutationRecord = function(data) {
@@ -77,139 +87,134 @@
 
 
         /*subtree and childlist helpers*/
+        //discussion: http://codereview.stackexchange.com/questions/38351
 
-        //Assigns a unique id to each node to be watched in order to be able to compare cloned nodes
-        //TODO find a cleaner way eg some hash represnetnation
-        var counter = 0;
+        //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
+        var counter = 1;//don't use 0 as id (falsy)
         var getId = function($ele) {
-            var id = $ele.nodeType === 3 ? $ele.nodeValue ://text node id is the text content
-                                            $ele.id || $ele.getAttribute("mut-id") || ++counter;
-            if(id === counter) {
-                $ele.setAttribute("mut-id", id);
-            }
-            return id;
+            return $ele.id || ($ele[expando] = $ele[expando] || ++counter);
         };
 
-        var sameNode = function(node1, node2) {
-            return node1 && node2 && getId(node1) === getId(node2);
-        };
-
-        var findIndex = function(set, node, from) {
-            from = ~~from;
-            for(var i = from,l=set.length; i<l; i++) {
-                if(sameNode(node, set[i])) return i;
-            }
-            return -1;
-        };
-
-        //set the ids for all of an elements children
-        var $id_kids = function(ele, deep) {
-            if(ele.nodeType !== 3) {//textNode
-                foreach.call(ele.children, function(node) {//only iterate elements not text nodes
-                    getId(node);
-                    if(deep) $id_kids(node, deep);
-                });
-            }
-            // return ele;
+        //clone an html node into a custom datastructure
+        // see https://gist.github.com/megawac/8201012
+        var clone = function (par, deep) {
+            var copy = function(par, top) {
+                return {
+                    node: par,
+                    kids: top || deep ? map.call(par.childNodes, function(node) {
+                        return copy(node);
+                    }) : null
+                };
+            };
+            return copy(par, true);
         };
 
         //findChildMutations: array of mutations so far, element, element clone, bool => array of mutations
         // dfs comparision search of two nodes
-        // perf and function tests: http://jsbin.com/uhoVibU/4
+        // this has to be as quick as possible
         var findChildMutations = function(target, oldstate, deep) {
             var mutations = [];
             var add = function(node) {
-                mutations.push(new MutationRecord({
-                    type: "childList",
+                mutations.push(MutationRecord({
+                    type: _childList,
                     target: node.parentElement,
                     addedNodes: [node]
                 }));
-                if(deep) $id_kids(node, deep);//ensure children of added ele have ids
             };
-            var rem = function(node) {
-                mutations.push(new MutationRecord({
-                    type: "childList",
-                    target: deep ? node.parentElement : target,//so target will appear correct on childList - more complicated on subtree
+            var rem = function(node, tar) {//have to pass tar because node.parentElement will be null when removed
+                mutations.push(MutationRecord({
+                    type: _childList,
+                    target: tar,
                     removedNodes: [node]
                 }));
             };
 
-            var findMut = function(node, oldnode) {
+            var findMut = function(node, old) {
                 var $kids = node.childNodes;
-                var $oldkids = oldnode.childNodes;
+                var $oldkids = old.kids;
                 var klen = $kids.length;
                 var olen = $oldkids.length;
-                
+
+                if(!olen && !klen) return;//both empty; clearly no changes
+
                 //id to i and j search hash to prevent double checking an element
-                var id;
                 var map = {};
+                var id;
+                var idx;//index of a moved or inserted element
 
                 //array of potention conflict hashes
                 var conflicts = [];
 
-                //offsets
-                //var offset_add = 0;//nodes added since last resolve //we dont have to check added as these are handled before remove
-                var offset_rem = 0;//nodes removed since last resolve
                 /*
                 * There is no gaurentee that the same node will be returned for both added and removed nodes
-                * if the position has been shuffled
+                * if the positions have been shuffled.
                 */
-                var resolver = function() {
-                    var counter = 0;//prevents same conflict being resolved twice
-                    var conflict;
-                    for (var i = 0, l = conflicts.length-1; i <= l; i++) {
-                        conflict = conflicts[i];
+                var resolveConflicts = function() {
+                    var size = conflicts.length - 1;
+                    var counter = -~ (size / 2);//prevents same conflict being resolved twice consider when two nodes switch places. only one should be given a mutation event (note -~ is math.ceil shorthand)
+                    conflicts.forEach(function(conflict) {
                         //attempt to determine if there was node rearrangement... won't gaurentee all matches
                         //also handles case where added/removed nodes cause nodes to be identified as conflicts
-                        if(counter < l && Math.abs(conflict.i - (conflict.j + offset_rem)) >= l) {
+                        if(counter && Math.abs(conflict.i - conflict.j) >= size) {
                             add($kids[conflict.i]);//rearrangment ie removed then readded
-                            rem($kids[conflict.i]);
-                            counter++;
+                            rem($kids[conflict.i], old.node);
+                            counter--;//found conflict
                         } else if(deep) {//conflicts resolved - check deep
                             findMut($kids[conflict.i], $oldkids[conflict.j]);
                         }
-                    }
-                    offset_rem = conflicts.length = 0;
+                    });
+                    conflicts = [];//clear conflicts
                 };
 
+                //current and old nodes
+                var $cur;
+                var $old;
+
                 //iterate over both old and current child nodes at the same time
-                for(var i = 0, j = 0, p; i < klen || j < olen; ) {
-                    if(sameNode($kids[i], $oldkids[j])) {//simple expected case
-                        if(deep) {//recurse
-                            findMut($kids[i], $oldkids[j]);
-                        }
+                for(var i = 0, j = 0; i < klen || j < olen; ) {
+                    //current and old nodes at the indexs
+                    $cur = $kids[i];
+                    $old = j < olen && $oldkids[j].node;
+
+                    if($cur === $old) {//simple expected case - needs to be as fast as possible
+                        //recurse on next level of children
+                        if(deep) findMut($cur, $oldkids[j]);
 
                         //resolve conflicts
-                        resolver();
+                        if(conflicts.length) resolveConflicts();
 
                         i++;
                         j++;
-                    } else {//lookahead until they are the same again or the end of children
-                        if(i < klen) {
-                            id = getId($kids[i]);
+                    } else {//(uncommon case) lookahead until they are the same again or the end of children
+                        if($cur) {
+                            id = getId($cur);
                             //check id is in the location map otherwise do a indexOf search
-                            if(!has.call(map, id)) {//not already found
-                                if((p = findIndex($oldkids, $kids[i], j)) === -1) {
-                                    add($kids[i]);
+                            if(!has(map, id)) {//not already found
+                                /* jshint loopfunc:true */
+                                if((idx = findIndex($oldkids, function($el) { return $el.node === $cur; }, j)) === -1) { //custom indexOf using comparitor
+                                    add($cur);//$cur is a new node
                                 } else {
-                                    conflicts.push(map[id] = {//bit dirty
+                                    map[id] = true;//mark id as found
+                                    conflicts.push({//add conflict
                                         i: i,
-                                        j: p
+                                        j: idx
                                     });
                                 }
                             }
                             i++;
                         }
 
-                        if(j < olen) {
-                            id = getId($oldkids[j]);
-                            if(!has.call(map, id)) {
-                                if((p = findIndex($kids, $oldkids[j], i)) === -1) {
-                                    rem($oldkids[j]);
-                                    offset_rem++;
+                        if($old) {
+                            id = getId($old);
+                            if(!has(map, id)) {
+                                if((idx = indexOf.call($kids, $old, i)) === -1) {//dont need to use a special indexof but need to i-1 due to o-b-1 from previous part
+                                    rem($old, old.node);
+                                } else if(idx === 0) {//special case: if idx=0 i and j are congurent so we can continue without conflict
+                                    continue;
                                 } else {
-                                    conflicts.push(map[id] = {
-                                        i: p,
+                                    map[id] = true;
+                                    conflicts.push({
+                                        i: idx,
                                         j: j
                                     });
                                 }
@@ -218,7 +223,7 @@
                         }
                     }
                 }
-                resolver();
+                if(conflicts.length) resolveConflicts();
             };
             findMut(target, oldstate);
             return mutations;
@@ -267,11 +272,10 @@
 
             childList: function(element, deep) {
                 deep = deep === patches;//observe will give the patches if we should watch subtree
-                $id_kids(element, deep);//set ids on element children
-                var $old = element.cloneNode(true);
+                var $old = clone(element, deep);
                 return function() {
                     var changed = findChildMutations(element, $old, deep);
-                    if(changed.length > 0) $old = element.cloneNode(true);
+                    if(changed.length) $old = clone(element, deep);//reclone if there've been changes
                     return changed;
                 };
             }
