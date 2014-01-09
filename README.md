@@ -7,10 +7,9 @@ A shim for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131107/
 
 #### MutationObserver
 
-* Implemented using `setInterval` (ever 25 ms) rather than using a `setImmediate` shim; so calls will be made less frequently and likely with more data than the standard MutationObserver. In addition, it can miss changes that occur and then are lost in the interval window.
+* Implemented using `setInterval` (every 40 ms) rather than using a `setImmediate` shim; so calls will be made less frequently and likely with more data than the standard MutationObserver. In addition, it can miss changes that occur and then are lost in the interval window.
 * Setting an observed elements html using `innerHTML` will call `childList` changes with many items with only 1 addedNode or removed node. With the standard you would have 1 call with multiple nodes in addedNodes and removedNodes
-* With `childList` and `subtree` changes in node order should be identified with a `addedNode` and `removedNode` mutation but the correct node may not always be identified.
-* `.takeRecords()` is currently not supported
+* With `childList` and `subtree` changes in node order (eg first element gets swapped with last) should fire a `addedNode` and `removedNode` mutation but the correct node may not always be identified.
 
 #### MutationRecord
 
@@ -29,7 +28,7 @@ Currently supports the following [MutationObserverInit properties](https://devel
 
 ### Performance
 
-The shim will check observed nodes usually 40 times per second for mutations (by default). See http://jsbin.com/uhoVibU/6 for `childList` and `subtree` performance and functionality tests. From my tests, assuming there are usually no mutations (shouldnt make much difference) will decrease page performance by *~1.5%* with childList (50 children) enabled and *~6.6%* with subtree (250 children) in ie9 (calculation is based on (`(ops/per sec) / (options.period in secs)`). Set `MutationObserver.prototype.options.period` if 40 times a second (*25 ms*) is too frequent. 
+The shim will check observed nodes usually 25 times per second (40 ms interval) for mutations (by default). Try running the [JSLitmus tests in the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html). From my tests of expected case (no mutations), ie9 can run the `childList` algorithm on an element with 50 children about 2800 times/sec enabled and ``subtree` on an element with 250 sub-children 550 times. Set `MutationObserver_period` if 25 times a second (*40 ms*) is too frequent or not frequent enough... TODO I should implement a heuristic to set the `_period`.
 
 ### Dependencies and Compatibility
 
@@ -39,8 +38,13 @@ The shim relies on the following methods to be supported or shimmed:
 * `Array.prototype.forEach`
 * `Array.prototype.map`
 * `Array.prototype.reduce`
-* `Function.prototype.bind`
 
+I've tested and verified compatibility in the following browsers
+
+* Internet Explorer 9, 10 in win7 and win8
+* Firefox 24, 26 in win7 and win8
+* Opera 12.16 in win7
+* "Internet" on Android HTC One V
 
 Try [running the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html) and see some simple example usage:
 
