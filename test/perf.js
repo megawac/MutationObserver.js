@@ -31,7 +31,7 @@ define([], function() {
         fill(mid);
         fill(large);
 
-        Custom.prototype.options.period = Infinity;//dont check
+        Custom._period = Infinity;//dont check
 
         [{
             childList: true

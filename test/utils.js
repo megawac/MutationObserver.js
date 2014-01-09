@@ -19,6 +19,15 @@ define([], function() {
         return id;
     }
 
+    var getChildren = function(ele) {
+        var arr = [];
+        var kids = ele.childNodes;
+        for (var i = 0, len = kids.length; i < len; i++) {
+            arr[i] = kids[i];
+        }
+        return arr;
+    }
+
     var utils = {
         each: function(col, fn) {
             return arrayProto.forEach.call(col, fn);
@@ -45,9 +54,9 @@ define([], function() {
 
         $children: function(ele) {
             if(ele instanceof $) {
-                return ele.map(function() {return slice.call(this.childNodes);}).get();
+                return ele.map(function() {return getChildren(this);}).get();
             }
-            return slice.call(ele.childNodes);
+            return getChildren(ele);
         },
 
         $makeArray: function($a) {
@@ -55,20 +64,20 @@ define([], function() {
         },
 
         sameNode: function(node1, node2) {//from ./MutationObserver.js
-            return node1 && node2 && getId(node1) === getId(node2);
+            return node1 && node2 && (node1 === node2 || getId(node1) === getId(node2));
         },
 
         //mutation helpers
         containsNode: function(col, node) {
             for (var i = 0; i < col.length; i++) {
-                if(utils.sameNode(node, col[i]) || node.isEqualNode(col[i])) return true;
+                if(utils.sameNode(node, col[i])/* || node.isEqualNode(col[i])*/) return true;
             }
             return false;
         },
 
         reduceNodes: function(mutations, property) {
             return utils.reduce(mutations, function(memo, cur) {
-                return memo.concat(Array.prototype.slice.call(cur[property]));
+                return memo.concat(slice.call(cur[property]));
             }, []);
         },
 
