@@ -26,6 +26,16 @@
                 if (has.call(object, key)) fn.call(bind, object[key], key, object);
             }
         };
+        //indexOf for collection using a comparitor
+        var findIndex = function(set, comparitor, from) {
+            for(var i = ~~from, l=set.length; i<l; i++) {
+                if(comparitor(set[i])) return i;
+            }
+            return -1;
+        };
+        
+        //id property
+        var expando = "mo_id";
 
         var getAttributes = function($e, filter) { //store dynamic attributes in a object
             var attrs = {};
@@ -39,11 +49,12 @@
         };
 
         /*subtree and childlist helpers*/
+        //discussion: http://codereview.stackexchange.com/questions/38351
 
         //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
-        var counter = 0;
+        var counter = 1;//don't use 0 as id (falsy)
         var getId = function($ele) {
-            return $ele.id || ($ele._id = $ele._id || counter++);
+            return $ele.id || ($ele[expando] = $ele[expando] || ++counter);
         };
 
         //clone an html node into a custom datastructure
@@ -96,30 +107,25 @@
                 //array of potention conflict hashes
                 var conflicts = [];
 
-                //offsets since last resolve. Can also solve the problem with a continue but we exect this method to be faster as i and j should eventually correlate
-                //var offset_add = 0;//nodes added since last resolve //we dont have to check added as these are handled before remove
-                var offset_rem = 0;//nodes removed since last resolve
-
                 /*
                 * There is no gaurentee that the same node will be returned for both added and removed nodes
                 * if the positions have been shuffled.
                 */
-                var resolver = function() {
-                    var counter = 0;//prevents same conflict being resolved twice
-                    var conflict;
-                    for (var i = 0, l = conflicts.length-1; i <= l; i++) {
-                        conflict = conflicts[i];
+                var resolveConflicts = function() {
+                    var size = conflicts.length - 1;
+                    var counter = -~ (size / 2);//prevents same conflict being resolved twice consider when two nodes switch places. only one should be given a mutation event (note -~ is math.ceil shorthand)
+                    conflicts.forEach(function(conflict) {
                         //attempt to determine if there was node rearrangement... won't gaurentee all matches
                         //also handles case where added/removed nodes cause nodes to be identified as conflicts
-                        if(counter < l && Math.abs(conflict.i - (conflict.j + offset_rem)) >= l) {
+                        if(counter && Math.abs(conflict.i - conflict.j) >= size) {
                             add($kids[conflict.i]);//rearrangment ie removed then readded
                             rem($kids[conflict.i], old.node);
-                            counter++;
+                            counter--;//found conflict
                         } else if(deep) {//conflicts resolved - check deep
                             findMut($kids[conflict.i], $oldkids[conflict.j]);
                         }
-                    }
-                    offset_rem = conflicts.length = 0;//clear conflicts
+                    });
+                    conflicts = [];//clear conflicts
                 };
 
                 //current and old nodes
@@ -133,12 +139,11 @@
                     $old = j < olen && $oldkids[j].node;
 
                     if($cur === $old) {//simple expected case - needs to be as fast as possible
-                        if(deep) {//recurse
-                            findMut($cur, $oldkids[j]);
-                        }
+                        //recurse on next level of children
+                        if(deep) findMut($cur, $oldkids[j]);
 
                         //resolve conflicts
-                        if(conflicts.length) resolver();
+                        if(conflicts.length) resolveConflicts();
 
                         i++;
                         j++;
@@ -147,7 +152,8 @@
                             id = getId($cur);
                             //check id is in the location map otherwise do a indexOf search
                             if(!has.call(map, id)) {//not already found
-                                if((idx = indexOf.call($oldkids, $cur, j)) === -1) {
+                                /* jshint loopfunc:true */
+                                if((idx = findIndex($oldkids, function($el) { return $el.node === $cur; }, j)) === -1) { //custom indexOf using comparitor
                                     add($cur);//$cur is a new node
                                 } else {
                                     map[id] = true;//mark id as found
@@ -158,15 +164,15 @@
                                 }
                             }
                             i++;
-                            //continue;
                         }
 
                         if($old) {
                             id = getId($old);
                             if(!has.call(map, id)) {
-                                if((idx = indexOf.call($kids, $old, i)) === -1) {
+                                if((idx = indexOf.call($kids, $old, i)) === -1) {//dont need to use a special indexof but need to i-1 due to o-b-1 from previous part
                                     rem($old, old.node);
-                                    offset_rem++;
+                                } else if(idx === 0) {//special case: if idx=0 i and j are congurent so we can continue without conflict
+                                    continue;
                                 } else {
                                     map[id] = true;
                                     conflicts.push({
@@ -179,7 +185,7 @@
                         }
                     }
                 }
-                if(conflicts.length) resolver();
+                if(conflicts.length) resolveConflicts();
             };
             findMut(target, oldstate);
             return mutations;
