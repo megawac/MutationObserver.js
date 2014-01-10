@@ -59,11 +59,20 @@ module.exports = function(grunt) {
                         }, {//not supported
                             browserName: "internet explorer",
                             version: "9"
+                        }, {//not supported and extremely buggy
+                            browserName: "internet explorer",
+                            version: "8"
                         }, {//not supported
                             browserName: "opera",
                             version: "12"
                         }, {//not supported
                             browserName: "safari",
+                            version: "5"
+                        }, {//not supported
+                            browserName: "android",
+                            platform: "Linux"
+                        }, {
+                            browserName: "iphone",
                             version: "5"
                         }
                     ]
@@ -86,7 +95,7 @@ module.exports = function(grunt) {
                     "/*!",
                     "* <%= pkg.name %> v<%= pkg.version %> (<%= pkg.repository.url %>)",
                     "* Authors: <% _.each(pkg.authors, function(author) { %><%= author.name %> (<%= author.email %>) <% }); %>",
-                    "* Use, redistribute and modify as desired. Released under <%= pkg.license.type %> <%= pkg.license.version %>.",
+                    // "* Use, redistribute and modify as desired. Released under <%= pkg.license.type %> <%= pkg.license.version %>.",
                     "*/\n"
                 ].join("\n")
             },
