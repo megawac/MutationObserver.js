@@ -3,7 +3,7 @@
 * Author: Graeme Yeates (github.com/megawac)
 * Repository: https://github.com/megawac/MutationObserver.js
 * License: WTFPL V2, 2004 (wtfpl.net).
-* Feel free to exclude the header and redistribute as you please.
+* Though credit and staring the repo will make me feel pretty, you can modify and redistribute as you please.
 * See https://github.com/WebKit/webkit/blob/master/Source/WebCore/dom/MutationObserver.cpp for current webkit source c++ implementation
 */
 (function(window) {
@@ -21,33 +21,22 @@
         var map = arrayProto.map;
         // var reduce = arrayProto.reduce;
 
-        // var has = Object.hasOwnProperty;
-        var has = function(obj, prop) { //instead of has.call(obj, prop)
+        var has = function(obj, prop) {
             return typeof obj[prop] !== "undefined";
         };
         var forIn = function (obj, fn/*, bind*/) {//currently not using bind
             // if(bind) fn = fn.bind(bind);//hoist optimization
             for (var prop in obj){
-                //minor optimization to allow for mark deletions instead of direct deletetions
+                //minor optimization to allow marked deletions instead of direct deletetions
                 if (typeof obj[prop] !== "undefined") fn(obj[prop], prop, obj);
             }
-        };
-        //indexOf for collection using a comparitor
-        var findIndex = function(set, comparitor, from) {
-            for(var i = ~~from, l=set.length; i<l; i++) {
-                if(comparitor(set[i])) return i;
-            }
-            return -1;
         };
 
         //MutationObserver property names (mainly for minimization)
         var _childList = "childList";
         var _attributes = "attributes";
-        
-        //id property
-        var expando = "mo_id";
 
-        /* public api code */
+        //Simple MutationRecord pseudoclass
         var MutationRecord = window.MutationRecord = function(data) {
             var settings = {
                 target: null,
@@ -64,35 +53,37 @@
         };
 
         /* attributes + attributeFilter helpers */
-
         var getAttributes = function($e, filter) { //store dynamic attributes in a object
             var attrs = {};
             var attributes = $e.attributes;
             var attr;
-            for (var i = 0, l = attributes.length; i < l; i++) {
+            for (var i = 0, l = attributes.length; i < l; i++) {//using native reduce was ~30% slower
                 attr = attributes[i];
                 if(!filter || has(filter, attr.name)) {
                     attrs[attr.name] = attr.value;
                 }
             }
             return attrs;
-            //Alternative slower code:
-            /*return reduce.call($e.attributes, function(memo, attr) {
-                if(!filter || has(filter, attr.name)) {
-                    memo[attr.name] = attr.value;
-                }
-                return memo;
-            }, {});*/
         };
-
 
         /*subtree and childlist helpers*/
         //discussion: http://codereview.stackexchange.com/questions/38351
 
         //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
         var counter = 1;//don't use 0 as id (falsy)
+        //id property
+        var expando = "mo_id";
+        //We could optimize this for legacy browsers but it hopefully wont be called enough to be a concern
         var getId = function($ele) {
-            return $ele.id || ($ele[expando] = $ele[expando] || ++counter);
+            try {
+                return $ele.id || ($ele[expando] = $ele[expando] || counter++);
+            } catch(o_O) {//ie <8 will throw if you set an unknown property on a text node
+                try {
+                    return $ele.nodeValue;//naive
+                } catch(ie) {//when text node is removed: https://gist.github.com/megawac/8355978 :(
+                    return counter++;
+                }
+            }
         };
 
         //clone an html node into a custom datastructure
@@ -109,9 +100,16 @@
             return copy(par, true);
         };
 
+        //indexOf an element in a collection of custom nodes
+        var indexOfCustomNode = function(set, $node, from) {
+            for(var i = ~~from, l=set.length; i<l; i++) {
+                if(set[i].node === $node) return i;
+            }
+            return -1;
+        };
+
         //findChildMutations: array of mutations so far, element, element clone, bool => array of mutations
-        // dfs comparision search of two nodes
-        // this has to be as quick as possible
+        // synchronous dfs comparision of two nodes
         var findChildMutations = function(target, oldstate, deep) {
             var mutations = [];
             var add = function(node) {
@@ -187,11 +185,10 @@
                         j++;
                     } else {//(uncommon case) lookahead until they are the same again or the end of children
                         if($cur) {
-                            id = getId($cur);
                             //check id is in the location map otherwise do a indexOf search
-                            if(!has(map, id)) {//not already found
+                            if(!has(map, (id = getId($cur)))) {//not already found
                                 /* jshint loopfunc:true */
-                                if((idx = findIndex($oldkids, function($el) { return $el.node === $cur; }, j)) === -1) { //custom indexOf using comparitor
+                                if((idx = indexOfCustomNode($oldkids, $cur, j)) === -1) { //custom indexOf using comparitor
                                     add($cur);//$cur is a new node
                                 } else {
                                     map[id] = true;//mark id as found
@@ -205,9 +202,8 @@
                         }
 
                         if($old) {
-                            id = getId($old);
-                            if(!has(map, id)) {
-                                if((idx = indexOf.call($kids, $old, i)) === -1) {//dont need to use a special indexof but need to i-1 due to o-b-1 from previous part
+                            if(!has(map, (id = getId($old)))) {
+                                if((idx = indexOf.call($kids, $old, i)) === -1) {//dont need to use a special indexof
                                     rem($old, old.node);
                                 } else if(idx === 0) {//special case: if idx=0 i and j are congurent so we can continue without conflict
                                     continue;
@@ -241,7 +237,7 @@
                 var $old = getAttributes(element, filter);
                 return function() {
                     var changed = [];
-                    var $attr = getAttributes(element, filter);
+                    var $attr = getAttributes(element, filter); //TODO: check attribute list for differences from $old before cloning
 
                     //simple object diff on two objects with all plain vals
                     forIn($attr, function(val, prop) {
