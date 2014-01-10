@@ -1,15 +1,19 @@
 MutationObserver [![Build Status](https://travis-ci.org/megawac/MutationObserver.js.png?branch=master)](https://travis-ci.org/megawac/MutationObserver.js)
 ========================
 
-A shim for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131107/#mutation-observers) ([can I use?](http://caniuse.com/mutationobserver)). The shim is async and uses interval fallbacks (default checks changes every 25ms) instead of the deprecated [DOM3 MutationEvents](http://www.w3.org/TR/DOM-Level-3-Events/#events-mutationevents).  
+[![Browser Test Status](https://saucelabs.com/browser-matrix/mutationobserver.svg)](https://saucelabs.com/u/mutationobserver)
+
+A polyfill for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131107/#mutation-observers) ([can I use?](http://caniuse.com/mutationobserver)). The polyfill is async and uses a recursive timeout fallback (default checks changes every 30ms + runtime) instead of using the deprecated [DOM3 MutationEvents](http://www.w3.org/TR/DOM-Level-3-Events/#events-mutationevents).  
  
-### Shim differences from standard interface
+### polyfill differences from standard interface
 
 #### MutationObserver
 
-* Implemented using `setInterval` (every 40 ms) rather than using a `setImmediate` shim; so calls will be made less frequently and likely with more data than the standard MutationObserver. In addition, it can miss changes that occur and then are lost in the interval window.
-* Setting an observed elements html using `innerHTML` will call `childList` changes with many items with only 1 addedNode or removed node. With the standard you would have 1 call with multiple nodes in addedNodes and removedNodes
+* Implemented using a recursive `setTimeout` (every ~30 ms) rather than using a `setImmediate` polyfill; so calls will be made less frequently and likely with more data than the standard MutationObserver. In addition, it can miss changes that occur and then are lost in the interval window.
+* Setting an observed elements html using `innerHTML` will call `childList` observer listeners with several mutations with only 1 addedNode or removed node per mutation. With the standard you would have 1 call with multiple nodes in addedNodes and removedNodes node lists.
 * With `childList` and `subtree` changes in node order (eg first element gets swapped with last) should fire a `addedNode` and `removedNode` mutation but the correct node may not always be identified.
+* Currently does not support watching attributes on `childList`/`subtree`. Will add support next version
+* Character data yet not supported
 
 #### MutationRecord
 
@@ -28,11 +32,11 @@ Currently supports the following [MutationObserverInit properties](https://devel
 
 ### Performance
 
-The shim will check observed nodes usually 25 times per second (40 ms interval) for mutations (by default). Try running the [JSLitmus tests in the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html). From my tests of expected case (no mutations), ie9 can run the `childList` algorithm on an element with 50 children about 2800 times/sec enabled and ``subtree` on an element with 250 sub-children 550 times. Set `MutationObserver_period` if 25 times a second (*40 ms*) is too frequent or not frequent enough... TODO I should implement a heuristic to set the `_period`.
+By default, the polyfill will check observed nodes about 25 times per second (~30 ms interval) for mutations. Try running the [JSLitmus tests in the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html). From my tests of expected case (no mutations), ie9 can run the `childList` algorithm on an element with 50 children about 2800 times/sec enabled and ``subtree` on an element with 250 sub-children 550 times. Set `MutationObserver_period` to change the interval.
 
 ### Dependencies and Compatibility
 
-The shim relies on the following methods to be supported or shimmed:
+The polyfill relies on the following methods to be supported or shimmed:
 
 * `Array.prototype.indexOf`
 * `Array.prototype.forEach`
@@ -42,8 +46,9 @@ The shim relies on the following methods to be supported or shimmed:
 I've tested and verified compatibility in the following browsers
 
 * Internet Explorer 9, 10 in win7 and win8
-* Firefox 24, 26 in win7 and win8
+* Firefox 21, 24, 26 in OSX, win7 and win8
 * Opera 12.16 in win7
+* Safari 6.0.5 on OSX
 * "Internet" on Android HTC One V
 
 Try [running the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html) and see some simple example usage:
