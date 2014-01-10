@@ -291,16 +291,17 @@
             var self = this;
             self._watched = [];
             self._checker = function() {
-                //do a check if _watched is empty?
                 var mutations = self.takeRecords();
 
                 if (mutations.length) { //fire away
                     listener.call(self, mutations, self);//call is not spec but consistent with other implementations
                 }
+
+                self._timeout = setTimeout(self._checker, MutationObserver._period);
             };
         };
 
-        MutationObserver._period = 40;//Period to check for mutations (25 times/sec)
+        MutationObserver._period = 30/*+runtime*/;//Period to check for mutations (~32 times/sec)
 
         MutationObserver.prototype = {
             observe: function(target, config) {
@@ -323,9 +324,9 @@
                         if(patch) self._watched.push(patch);//patch will be a function or falsy if we shouldnt watch
                     }
                 });
-                
-                if(!self._interval) {
-                    this._interval = setInterval(this._checker, MutationObserver._period);
+                //reconnect if not connected
+                if(!self._timeout) {
+                    self._checker();
                 }
             },
 
@@ -345,8 +346,8 @@
 
             disconnect: function() {
                 this._watched = [];//just clear the stuff being observed
-                clearInterval(this._interval);//ready for garbage collection
-                this._interval = null;
+                clearTimeout(this._timeout);//ready for garbage collection
+                this._timeout = null;
             }
         };
     }
