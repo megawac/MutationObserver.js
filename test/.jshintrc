@@ -15,7 +15,8 @@
         "deepEqual": true,
 
         "define": true,
-        "yepnope": true
+        "yepnope": true,
+        "curl": true
     },
 
     "strict": false

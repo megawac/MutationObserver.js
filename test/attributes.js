@@ -67,14 +67,14 @@ define(["utils"], function(utils) {
             var observer3 = new MutationObserver(function(items, observer) {
                 equal(items.length, 1, "Can observe attributes of subtree");
                 equal(items[0].target, $tar.get(0), "Called with the correct target on the subtree");
-                equal(items[0].attributeName, "style", "Called with the correct attribute name in the subtree");
+                equal(items[0].attributeName, "class", "Called with the correct attribute name in the subtree");
             });
             observer3.observe(teste2, {
                 attributes: true,
                 childList: true,
                 subtree: true
             });
-            $tar.hide();
+            $tar.get(0).className += "attribute subtree test";
 
             deferred.done(function() {
                 observer.disconnect();
