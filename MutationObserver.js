@@ -15,10 +15,9 @@ window.MutationObserver = (function(window) {
     */
     var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
     if (!MutationObserver) {
-        var arrayProto = Array.prototype;
-        var indexOf = arrayProto.indexOf;
-        var map = arrayProto.map;
-        // var reduce = arrayProto.reduce;
+        var indexOf = Array.prototype.indexOf;
+        var map = Array.prototype.map;
+        // var reduce = Array.prototype.reduce;
 
         /**
          * @param {Object} obj
@@ -29,13 +28,8 @@ window.MutationObserver = (function(window) {
             return typeof obj[prop] !== "undefined";
         };
 
-        /** @const */
-        var _childList = "childList";
-        /** @const */
-        var _attributes = "attributes";
-
         /**
-         * Simple MutationRecord pseudoclass
+         * Simple MutationRecord pseudoclass. No longer exposing as its not fully compliant
          * @param {Object}
          * @constructor
          */
@@ -97,9 +91,10 @@ window.MutationObserver = (function(window) {
                 name = attr.name;
                 if(!filter || filter[name]) {
                     if(attr.value !== old[name]) {
+                        //The pushing is redundant but gzips very nicely
                         mutations.push(MutationRecord({
                             target: $ele,
-                            type: _attributes,
+                            type: "attributes",
                             attributeName: name,
                             oldValue: old[name],
                             attributeNamespace: attr.namespaceURI
@@ -112,7 +107,7 @@ window.MutationObserver = (function(window) {
                 if( !(checked[name]) ) {
                     mutations.push(MutationRecord({
                         target: $ele,
-                        type: _attributes,
+                        type: "attributes",
                         attributeName: name,
                         oldValue: old[name]
                     }));
@@ -196,14 +191,14 @@ window.MutationObserver = (function(window) {
         var findChildMutations = function(mutations, target, oldstate, config) {
             var add = function(node) {
                 mutations.push(MutationRecord({
-                    type: _childList,
-                    target: node.parentElement,
+                    type: "childList",
+                    target: node.parentNode,//support for ff<9
                     addedNodes: [node]
                 }));
             };
             var rem = function(node, tar) {//have to pass tar because node.parentElement will be null when removed
                 mutations.push(MutationRecord({
-                    type: _childList,
+                    type: "childList",
                     target: tar,
                     removedNodes: [node]
                 }));
@@ -377,7 +372,7 @@ window.MutationObserver = (function(window) {
                  * @type {number?}
                  * @private
                  */
-                self._timeout = setTimeout(self._checker, MutationObserver._period);
+                self._timeout = window.setTimeout(self._checker, MutationObserver._period);
             };
         };
 
@@ -389,23 +384,20 @@ window.MutationObserver = (function(window) {
         MutationObserver._period = 30/*+runtime*/;
         
         /**
+         * see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
+         * not going to throw here but going to follow the current spec config sets
          * @param {element} $target
          * @param {Object} config
          * @expose
          */
         MutationObserver.prototype.observe = function($target, config) {
-            var self = this;
-
-            var watched = self._watched;
+            var watched = this._watched;
             for (var i = 0; i < watched.length; i++) {
                 if(watched[i].tar === $target) {
                     watched.splice(i, 1);
                     break;
                 }
             }
-   
-            //see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
-            //not going to throw here but going to follow the spec config sets
 
             /** 
              * Using slightly different names so closure can go ham
@@ -419,6 +411,7 @@ window.MutationObserver = (function(window) {
                 descendents: !!config.subtree
             };
             if(config.attributeFilter) {
+                //converts to a {key: true} dict for faster lookup
                 settings.afilter = config.attributeFilter.reduce(function(a, b) {a[b] = true; return a;}, {});
             }
 
@@ -428,8 +421,8 @@ window.MutationObserver = (function(window) {
             });
 
             //reconnect if not connected
-            if(!self._timeout) {
-                self._checker();
+            if(!this._timeout) {
+                this._checker();
             }
         };
 
@@ -455,7 +448,7 @@ window.MutationObserver = (function(window) {
          */
         MutationObserver.prototype.disconnect = function() {
             this._watched.length = 0;//clear the stuff being observed
-            clearTimeout(this._timeout);//ready for garbage collection
+            window.clearTimeout(this._timeout);//ready for garbage collection
             /**
              * @type {number?}
              * @private
