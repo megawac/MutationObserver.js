@@ -15,7 +15,7 @@ $(function() {
     curl(["tests.js", "perf.js"], function(MutationObserverTests, perf) {
 
         var test2 = function(context) {
-            if(context && context.name !== "MutationObserver") return;
+            if(context && context.name !== "Native MutationObserver") return;
 
             var native = window.WebkitMutationObserver || window.MutationObserver;
 
@@ -27,17 +27,17 @@ $(function() {
                 var custom = window.MutationObserver;
 
                 if(native != custom) {//webkit doesnt allow mutation observer to be deleted
-                    MutationObserverTests("MutationObserver-Shim");
+                    MutationObserverTests("MutationObserver Shim");
                     perf(custom, native);
                 } else {
-                    QUnit.module("MutationObserver-Shim");
+                    QUnit.module("MutationObserver Shim");
                     QUnit.testSkip("Can't test shim in this browser as we cannot delete the native MutationObserver. Some implementations protect it --- lookin at you webkit");
                 }
             });
         };
 
         if(window.MutationObserver) {
-            MutationObserverTests("MutationObserver");
+            MutationObserverTests("Native MutationObserver");
             QUnit.moduleDone( test2 );
         } else {
             test2();
