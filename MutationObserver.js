@@ -6,101 +6,177 @@
 * Though credit and staring the repo will make me feel pretty, you can modify and redistribute as you please.
 * See https://github.com/WebKit/webkit/blob/master/Source/WebCore/dom/MutationObserver.cpp for current webkit source c++ implementation
 */
-(function(window) {
+window.MutationObserver = (function(window) {
     "use strict";
     /*
     prefix bugs:
         -https://bugs.webkit.org/show_bug.cgi?id=85161
         -https://bugzilla.mozilla.org/show_bug.cgi?id=749920
     */
-    var MutationObserver = window.MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+    var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
     if (!MutationObserver) {
         var arrayProto = Array.prototype;
-        var push = arrayProto.push;
         var indexOf = arrayProto.indexOf;
         var map = arrayProto.map;
         // var reduce = arrayProto.reduce;
 
+        /**
+         * @param {Object} obj
+         * @param {string} prop
+         * @returns {boolean}
+         */
         var has = function(obj, prop) {
             return typeof obj[prop] !== "undefined";
         };
-        var forIn = function (obj, fn/*, bind*/) {//currently not using bind
-            // if(bind) fn = fn.bind(bind);//hoist optimization
-            for (var prop in obj){
-                //minor optimization to allow marked deletions instead of direct deletetions
-                if (typeof obj[prop] !== "undefined") fn(obj[prop], prop, obj);
-            }
-        };
 
-        //MutationObserver property names (mainly for minimization)
+        /** @const */
         var _childList = "childList";
+        /** @const */
         var _attributes = "attributes";
 
-        //Simple MutationRecord pseudoclass
-        var MutationRecord = window.MutationRecord = function(data) {
+        /**
+         * Simple MutationRecord pseudoclass
+         * @param {Object}
+         * @constructor
+         */
+        var MutationRecord = function(data) {
             var settings = {
                 target: null,
                 type: null,
                 addedNodes: [],
                 removedNodes: [],
                 attributeName: null,
+                attributeNamespace: null,
                 oldValue: null
             };
-            forIn(data, function(v,k) {
-                settings[k] = v;
-            });
+            for (var prop in data){
+                if (has(settings, prop)) settings[prop] = data[prop];
+            }
             return settings;
         };
 
         /* attributes + attributeFilter helpers */
-        var getAttributes = function($e, filter) { //store dynamic attributes in a object
+
+        /**
+         * clone live attribute list to an object structure {name: val}
+         * 
+         * @param {Element} $e
+         * @param {Object} filter
+         * @returns {Object.<string, string>}
+         */
+        var cloneAttributes = function($e, filter) {
             var attrs = {};
             var attributes = $e.attributes;
             var attr;
             for (var i = 0, l = attributes.length; i < l; i++) {//using native reduce was ~30% slower
                 attr = attributes[i];
-                if(!filter || has(filter, attr.name)) {
+                if(!filter || filter[attr.name]) {
                     attrs[attr.name] = attr.value;
                 }
             }
             return attrs;
         };
 
+
+        /**
+         * fast helper to check to see if attributes object of an element has changed
+         * doesnt handle the textnode case
+         *
+         * @param {Array.<MutationRecord>} 
+         * @param {Element} $ele
+         * @param {Object.<string, string>} old
+         * @param {Object} filter
+         */
+        var findAttributeMutations = function(mutations, $ele, old, filter) {
+            var checked = {};
+            var attributes = $ele.attributes;
+            var attr;
+            var name;
+            for (var i = 0, l = attributes.length; i < l; i++) {
+                attr = attributes[i];
+                name = attr.name;
+                if(!filter || filter[name]) {
+                    if(attr.value !== old[name]) {
+                        mutations.push(MutationRecord({
+                            target: $ele,
+                            type: _attributes,
+                            attributeName: name,
+                            oldValue: old[name],
+                            attributeNamespace: attr.namespaceURI
+                        }));
+                    }
+                    checked[name] = true;
+                }
+            }
+            for(name in old) {
+                if( !(checked[name]) ) {
+                    mutations.push(MutationRecord({
+                        target: $ele,
+                        type: _attributes,
+                        attributeName: name,
+                        oldValue: old[name]
+                    }));
+                }
+            }
+        };
+
         /*subtree and childlist helpers*/
         //discussion: http://codereview.stackexchange.com/questions/38351
+
+        /**
+         * clone an html node into a custom datastructure
+         * see https://gist.github.com/megawac/8201012
+         *
+         * @param {Element} par
+         * @param {MOConfig} config
+         * @return {Elestruct}
+         */
+        var clone = function (par, config) {
+            var copy = function(par, top) {
+                return {
+                    /** @type {Element} */
+                    node: par,
+                    /** @type {Array.<Elestruct>} */
+                    kids: config.kids && (top || config.descendents) ? map.call(par.childNodes, function(node) {
+                        return copy(node);
+                    }) : null,
+                    /** @type {Object.<string, string>} */
+                    attr: config.attr && (top || config.descendents) && par.nodeType !== 3 ? cloneAttributes(par, config.afilter) : null
+                };
+            };
+            return copy(par, true);
+        };
 
         //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
         var counter = 1;//don't use 0 as id (falsy)
         //id property
         var expando = "mo_id";
-        //We could optimize this for legacy browsers but it hopefully wont be called enough to be a concern
+        /**
+         * Attempt to uniquely id an element for hashing. We could optimize this for legacy browsers but it hopefully wont be called enough to be a concern
+         * 
+         * @param {Element} $ele
+         * @returns {(number|string)}
+         */
         var getId = function($ele) {
             try {
                 return $ele.id || ($ele[expando] = $ele[expando] || counter++);
             } catch(o_O) {//ie <8 will throw if you set an unknown property on a text node
                 try {
                     return $ele.nodeValue;//naive
-                } catch(ie) {//when text node is removed: https://gist.github.com/megawac/8355978 :(
+                } catch(shitie) {//when text node is removed: https://gist.github.com/megawac/8355978 :(
                     return counter++;
                 }
             }
         };
 
-        //clone an html node into a custom datastructure
-        // see https://gist.github.com/megawac/8201012
-        var clone = function (par, deep) {
-            var copy = function(par, top) {
-                return {
-                    node: par,
-                    kids: top || deep ? map.call(par.childNodes, function(node) {
-                        return copy(node);
-                    }) : null
-                };
-            };
-            return copy(par, true);
-        };
-
-        //indexOf an element in a collection of custom nodes
+        /**
+         * indexOf an element in a collection of custom nodes
+         *
+         * @param {Element} set
+         * @param {Elestruct} $node
+         * @param {number} from
+         * @returns {number}
+         */
         var indexOfCustomNode = function(set, $node, from) {
             for(var i = ~~from, l=set.length; i<l; i++) {
                 if(set[i].node === $node) return i;
@@ -108,10 +184,16 @@
             return -1;
         };
 
-        //findChildMutations: array of mutations so far, element, element clone, bool => array of mutations
-        // synchronous dfs comparision of two nodes
-        var findChildMutations = function(target, oldstate, deep) {
-            var mutations = [];
+        /**
+         * findChildMutations: array of mutations so far, element, element clone, bool => array of mutations
+         * synchronous dfs comparision of two nodes
+         *
+         * @param {Array} mutations
+         * @param {Element} target
+         * @param {Elestruct} oldstate
+         * @param {MOConfig} config
+         */
+        var findChildMutations = function(mutations, target, oldstate, config) {
             var add = function(node) {
                 mutations.push(MutationRecord({
                     type: _childList,
@@ -127,6 +209,10 @@
                 }));
             };
 
+            /**
+            * @param {Element} node
+            * @param {Elestruct} old
+            */
             var findMut = function(node, old) {
                 var $kids = node.childNodes;
                 var $oldkids = old.kids;
@@ -157,8 +243,9 @@
                             add($kids[conflict.i]);//rearrangment ie removed then readded
                             rem($kids[conflict.i], old.node);
                             counter--;//found conflict
-                        } else if(deep) {//conflicts resolved - check deep
-                            findMut($kids[conflict.i], $oldkids[conflict.j]);
+                        } else {//conflicts resolved - check subtree and attributes
+                            if(config.descendents) findMut($kids[conflict.i], $oldkids[conflict.j]);
+                            if(config.attr && $oldkids[conflict.j].attr) findAttributeMutations(mutations, $kids[conflict.i], $oldkids[conflict.j].attr, config.afilter);
                         }
                     });
                     conflicts = [];//clear conflicts
@@ -176,7 +263,8 @@
 
                     if($cur === $old) {//simple expected case - needs to be as fast as possible
                         //recurse on next level of children
-                        if(deep) findMut($cur, $oldkids[j]);
+                        if(config.descendents) findMut($cur, $oldkids[j]);
+                        if(config.attr && $oldkids[j].attr) findAttributeMutations(mutations, $cur, $oldkids[j].attr, config.afilter);
 
                         //resolve conflicts
                         if(conflicts.length) resolveConflicts();
@@ -222,129 +310,158 @@
                 if(conflicts.length) resolveConflicts();
             };
             findMut(target, oldstate);
-            return mutations;
         };
 
-        //patches return a function which return an array of mutations. If nothing is returned its return discarded at runtime
-        //these functions are called many times a second - should optimize for no mutations
-        var patches = {
-            attributes: function(element, filter) {
-                if(filter && filter.reduce) {
-                    filter = filter.reduce(function(a, b) {a[b] = true; return a;}, {});//convert array to hash for faster lookup
-                } else {
-                    filter = null;
+        /**
+         * Creates a func to find all the mutations
+         *
+         * @param {Element} $target
+         * @param {MOConfig} config
+         */
+        var createMutationSearcher = function($target, config) {
+            /** type {Elestuct} */
+            var $old = clone($target, config);//create the cloned datastructure
+
+            /**
+             * consumes array of mutations we can push to
+             *
+             * @param {Array.<MutationRecord>} mutations
+             */
+            return function(mutations) {
+                var olen = mutations.length;
+
+                //Alright we check base level changes in attributes... easy
+                if(config.attr && $old.attr) {
+                    findAttributeMutations(mutations, $target, $old.attr, config.afilter);
                 }
-                var $old = getAttributes(element, filter);
-                return function() {
-                    var changed = [];
-                    var $attr = getAttributes(element, filter); //TODO: check attribute list for differences from $old before cloning
+                
+                //check childlist + subtree?
+                if(config.kids) {
+                    findChildMutations(mutations, $target, $old, config);
+                }
 
-                    //simple object diff on two objects with all plain vals
-                    forIn($attr, function(val, prop) {
-                        if ($old[prop] !== val) {
-                            changed.push(MutationRecord({
-                                target: element,
-                                type: _attributes,
-                                attributeName: prop,
-                                oldValue: $old[prop]
-                            }));
-                        }
-                        delete $old[prop];
-                    });
-                    forIn($old, function(val, prop) {//clearly rest are mutations
-                        changed.push(MutationRecord({
-                            target: element,
-                            type: _attributes,
-                            attributeName: prop,
-                            oldValue: val
-                        }));
-                    });
 
-                    $old = $attr;
+                //reclone data structure if theres changes
+                if(mutations.length !== olen) {
+                    /** type {Elestuct} */
+                    $old = clone($target, config);
+                }
 
-                    return changed;
-                };
-            },
-
-            childList: function(element, deep) {
-                deep = deep === patches;//observe will give the patches if we should watch subtree
-                var $old = clone(element, deep);
-                return function() {
-                    var changed = findChildMutations(element, $old, deep);
-                    if(changed.length) $old = clone(element, deep);//reclone if there've been changes
-                    return changed;
-                };
-            }
-
-            // attributeFilter: noop,
-            // attributeOldValue: noop,
-            // characterData: noop,
-            // characterDataOldValue: noop,
-            // subtree: noop,
+                // Hallelujah done on to next observed item?
+            };
         };
 
-        MutationObserver = window.MutationObserver = function(listener) {
+        /**
+         * @param {function(Array.<MutationRecords>, MutationObserver)} listener
+         * @constructor
+         */
+        MutationObserver = function(listener) {
             var self = this;
+            /**
+             * @type {Array.<function(Array.<MutationRecords>)>}
+             * @private
+             */
             self._watched = [];
+            /** 
+             * Recursive function to check all observed items for mutations
+             * @type {function()}
+             * @private
+             */
             self._checker = function() {
                 var mutations = self.takeRecords();
 
                 if (mutations.length) { //fire away
                     listener.call(self, mutations, self);//call is not spec but consistent with other implementations
                 }
-
+                /** 
+                 * @type {number?}
+                 * @private
+                 */
                 self._timeout = setTimeout(self._checker, MutationObserver._period);
             };
         };
 
-        MutationObserver._period = 30/*+runtime*/;//Period to check for mutations (~32 times/sec)
+        /** 
+        * Period to check for mutations (~32 times/sec)
+        * @type {number}
+        * @expose
+        */
+        MutationObserver._period = 30/*+runtime*/;
+        
+        /**
+         * @param {element} $target
+         * @param {Object} config
+         * @expose
+         */
+        MutationObserver.prototype.observe = function($target, config) {
+            var self = this;
 
-        MutationObserver.prototype = {
-            observe: function(target, config) {
-                var self = this;
-                var patch;
-
-                //see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
-                //not going to throw here but going to follow the spec config sets
-                if(config.attributeFilter || config.attributeOldValue) {
-                    config[_attributes] = config.attributeFilter || true;
+            var watched = self._watched;
+            for (var i = 0; i < watched.length; i++) {
+                if(watched[i].tar === $target) {
+                    watched.splice(i, 1);
+                    break;
                 }
+            }
+   
+            //see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
+            //not going to throw here but going to follow the spec config sets
+
+            /** 
+             * Using slightly different names so closure can go ham
+             * @type {MOConfig}
+             */
+            var settings = {
+                attr: !!( config.attributes || config.attributeFilter || config.attributeOldValue ),
+
                 //some browsers are strict in their implementation that config.subtree and childList must be set together. We don't care - spec doesn't specify
-                if(config.subtree/*&& has(config, _childList)*/) {
-                    config[_childList] = patches;
-                }
+                kids: !!( config.childList || config.subtree ),
+                descendents: !!config.subtree
+            };
+            if(config.attributeFilter) {
+                settings.afilter = config.attributeFilter.reduce(function(a, b) {a[b] = true; return a;}, {});
+            }
 
-                forIn(config, function(use, type) {
-                    if (use && has(patches, type)) {
-                        patch = patches[type].call(self, target, use);
-                        if(patch) self._watched.push(patch);//patch will be a function or falsy if we shouldnt watch
-                    }
-                });
-                //reconnect if not connected
-                if(!self._timeout) {
-                    self._checker();
-                }
-            },
+            watched.push({
+                tar: $target,
+                fn: createMutationSearcher($target, settings)
+            });
 
-            //finds mutations since last check and empties the "record queue" i.e. mutations will only be found once
-            takeRecords: function() {
-                var mutations = [];
-                var watched = this._watched;
-                var res;
-
-                for(var i = 0, l = watched.length; i < l; i++) {
-                    res = watched[i]();
-                    if(res.length) push.apply(mutations, res);//expect no mutations most of the time
-                }
-
-                return mutations;
-            },
-
-            disconnect: function() {
-                this._watched = [];//just clear the stuff being observed
-                clearTimeout(this._timeout);//ready for garbage collection
-                this._timeout = null;
+            //reconnect if not connected
+            if(!self._timeout) {
+                self._checker();
             }
         };
+
+        /**
+         * Finds mutations since last check and empties the "record queue" i.e. mutations will only be found once
+         * @expose
+         * @returns {Array.<MutationRecords>}
+         */
+        MutationObserver.prototype.takeRecords = function() {
+            /** @type {Array.<MutationRecords>} */
+            var mutations = [];
+            var watched = this._watched;
+
+            for(var i = 0, l = watched.length; i < l; i++) {
+                watched[i].fn(mutations);
+            }
+
+            return mutations;
+        };
+
+        /**
+         * @expose
+         */
+        MutationObserver.prototype.disconnect = function() {
+            this._watched.length = 0;//clear the stuff being observed
+            clearTimeout(this._timeout);//ready for garbage collection
+            /**
+             * @type {number?}
+             * @private
+             */
+            this._timeout = null;
+        };
     }
+    return MutationObserver;
 })(window);
