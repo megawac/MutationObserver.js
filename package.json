@@ -17,15 +17,16 @@
     "url": "http://github.com/megawac/MutationObserver.js"
   },
   "main": "MutationObserver.js",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "devDependencies": {
     "phantomjs": "1.9.x",
     "grunt": "~0.4.2",
-    "grunt-contrib-uglify": ">= 0.2",
     "grunt-saucelabs": "4.1.x",
     "grunt-contrib-jshint": ">= 0.8",
     "grunt-contrib-qunit": "0.3.x",
-    "grunt-contrib-connect": "0.6.x"
+    "grunt-contrib-connect": "0.6.x",
+    "grunt-gcc": "0.2.x",
+    "grunt-file-info": "~1.0.4"
   },
   "scripts": {
     "test": "grunt test --verbose"
@@ -34,6 +35,6 @@
     "type": "WTFPL",
     "version": "v2 2004",
     "url": "http://www.wtfpl.net/",
-    "details": "Feel free to use/modify/redistribute my code however the fuck you want, with or without credit"
+    "details": "Feel free to use/modify/redistribute my code however the fuck you want"
   }
 }
