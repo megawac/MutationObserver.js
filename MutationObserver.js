@@ -413,8 +413,8 @@ window.MutationObserver = (function(window) {
             if (config.attributeFilter) {
                 //converts to a {key: true} dict for faster lookup
                 settings.afilter = config.attributeFilter.reduce(function(a, b) {
-                    /* jshint boss:true */
-                    return a[b] = true;
+                    a[b] = true;
+                    return a;
                 }, {});
             }
 
