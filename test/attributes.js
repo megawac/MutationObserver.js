@@ -1,7 +1,7 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("attributes and attributeFilter", 7, function() {
-            var deferred = utils.asyncAutocomplete();
+        QUnit.asyncTest("attributes and attributeFilter", 12, function() {
+            var deferred = utils.asyncAutocomplete(500);
 
             var $test = $("<div>", {
                 "class": "test",
@@ -9,7 +9,8 @@ define(["utils"], function(utils) {
                 css: {
                     display: "inline"
                 }
-            });
+            }).append("<span></span><p>stuff</p>");
+
             var teste = $test.get(0);
 
             var observer = new MutationObserver(function(items, observer) {
@@ -19,6 +20,7 @@ define(["utils"], function(utils) {
                 ok( items.every(function(item) { return item.type === "attributes"; }), "Called with correct type");
 
                 ok( items.some(function(item) {return item.attributeName === "id" && item.oldValue === "ya"; }), "Called with attribute names and old value");
+                ok( items.every(function(item) { return item.attributeNamespace !== undefined }), "Called with attribute namespace");
             });
             observer.observe(teste, {
                 attributes: true,
@@ -30,10 +32,14 @@ define(["utils"], function(utils) {
 
                 ok( items.some(function(item) {return item.attributeName === "id"; }), "Attribute filter is called with attribute names and old value when appropriate");
                 ok( !items.some(function(item) {return item.attributeName === "data-test";}), "Filtered attributes are do not produce a mutation");
+            
+
+                ok( !items.some(function(item) {return item.target !== teste;}), "Should not observe attributes on subtree unless subtree is specified, i.e. setting childList does not make subtree be observed");
             });
             observer2.observe(teste, {
                 attributes: true,
-                attributeFilter: ["id", "style"]
+                attributeFilter: ["id", "style"],
+                childList: true
             });
 
             //spec but throws on chrome 28
@@ -47,15 +53,33 @@ define(["utils"], function(utils) {
             } catch(o_o) {
 
             }*/
-            
+
             //setting with jquery can cause multiple steps
             teste.removeAttribute("id");
             teste.setAttribute("data-test", 5231);
             teste.style.display = "table";
+            $test.find("p").addClass("dont call");
+
+            // observing attribuets on subtree tests
+            var $test2 = $("<div><span class='name'>3</span><span class='name'>2</span><span class='name'>1</span></div>");
+            var teste2 = $test2.get(0);
+            var $tar = utils.$randomChild($test2);
+            var observer3 = new MutationObserver(function(items, observer) {
+                equal(items.length, 1, "Can observe attributes of subtree");
+                equal(items[0].target, $tar.get(0), "Called with the correct target on the subtree");
+                equal(items[0].attributeName, "style", "Called with the correct attribute name in the subtree");
+            });
+            observer3.observe(teste2, {
+                attributes: true,
+                childList: true,
+                subtree: true
+            });
+            $tar.hide();
 
             deferred.done(function() {
                 observer.disconnect();
                 observer2.disconnect();
+                observer3.disconnect();
             });
         });
     };

@@ -2,10 +2,10 @@ QUnit.config.testTimeout = 1000;
 QUnit.config.autostart = false;//was having trouble with autostart
 
 QUnit.testSkip = function() {//http://stackoverflow.com/questions/13748129/skipping-a-test-in-qunit
-   QUnit.test(arguments[0] + ' (SKIPPED)', 0, function() {
+   QUnit.test(arguments[0] + " (SKIPPED)", 0, function() {
        var li = document.getElementById(QUnit.config.current.id);
        QUnit.done(function() {
-           li.style.background = '#FFFF99';
+           li.style.background = "#FFFF99";
        });
    });
 };
@@ -22,6 +22,7 @@ $(function() {
             window.WebkitMutationObserver = window.MutationObserver = null;//so poly goes in
 
             yepnope.injectJs("../MutationObserver.js", function() {
+            // yepnope.injectJs("../dist/mutationobserver.min.js", function() {
 
                 var custom = window.MutationObserver;
 

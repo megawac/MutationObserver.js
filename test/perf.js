@@ -3,29 +3,39 @@ define([], function() {
         var small = {
             $ele: $("<div class='test'></div>"),
             children: 10,
-            descendents: 1
+            descendents: 1,
+            attributes: 3
         };
         var mid = {
             $ele: $("<div class='test'></div>"),
             children: 20,
-            descendents: 3
+            descendents: 3,
+            attributes: 3
         };
         var large = {
             $ele: $("<div class='test'></div>"),
             children: 50,
-            descendents: 5
+            descendents: 5,
+            attributes: 3
         };
+
+        var attributes = [];
+        for (var i = 0; i < 20; i++) {
+            attributes.push("attr-" + Math.random().toFixed(5) + "='a" + i + "'");
+        }
 
         function fill(opts) {
             var str = "";
+            var rand;
             for (var i = 0, j; i < opts.children; i++) {
                 for (j = 0; j < opts.descendents; j++) {
-                    str += "<span>" + j + "</span>";
+                    rand = Math.floor(Math.random() * (17 - 0) + 0);
+                    str += "<span " + attributes.slice(rand, rand+3) + ">" + j + "</span>";
                 }
                 str+=i;
             }
             opts.$ele.html(str);
-        };
+        }
 
         fill(small);
         fill(mid);
@@ -46,12 +56,16 @@ define([], function() {
         {
             attributes: true,
             attributeFilter: ["id", "style"]
+        },
+        {
+            attributes: true,
+            subtree: true
         }].forEach(function(context) {
 
             [small, mid, large].forEach(function(test) {
                 var ele = test.$ele[0];
 
-                var description = Object.keys(context).join("+") + " search on element with " + test.children + " children and " + test.descendents + " descendents";
+                var description = Object.keys(context).join("+") + " search on element with " + test.children + " children and " + test.descendents + " descendents and " + test.attributes + " attributes per node";
 
                 var observer = new Custom(function(items, observer) {});
                 observer.observe(test.$ele.get(0), context);

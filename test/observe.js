@@ -35,8 +35,12 @@ define(["utils"], function(utils) {
                     } else if(item.target === teste2) {
                         if(obj.test2) obj.test2 += n;
                         else obj.test2 = n;
+
+                        if(item.type === "attributes") {
+                            throw "Observing an element twice with different configs uses only the most recent config";
+                        }
                     } else {
-                        console.error("wtf is this:", item);
+                        throw "Unexpected element given";
                     }
                     return obj;
                 }, {});
@@ -63,6 +67,11 @@ define(["utils"], function(utils) {
             });
 
             observer.observe(teste2, {
+                attributes: true,
+                childList: true
+            });
+
+            observer.observe(teste2, {
                 childList: true
             });
 
@@ -72,6 +81,7 @@ define(["utils"], function(utils) {
             $("<span>", {value: "hi"}).appendTo(teste1);
 
             $("<a>", {href: "github.com"}).appendTo(teste2);
+            $test2.addClass("no mutation plz");
 
             deferred.done(function() {
                 observer.disconnect();
