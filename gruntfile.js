@@ -71,7 +71,11 @@ module.exports = function(grunt) {
                         platform: "Windows XP"
                     }, { //not supported and extremely buggy
                         browserName: "internet explorer",
-                        version: "7"
+                        version: "7",
+                        platform: "Windows XP"
+                    }, { //not supported
+                        browserName: "opera",
+                        version: "11"
                     }, { //not supported
                         browserName: "opera",
                         version: "12"
@@ -94,7 +98,6 @@ module.exports = function(grunt) {
                 options: {
                     compilation_level: "ADVANCED_OPTIMIZATIONS",
                     generate_exports: true,
-                    debug: true,
 
                     banner: [
                         "/**",
