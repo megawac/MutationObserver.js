@@ -1,7 +1,7 @@
 define(["utils"], function(utils) {
     return function() {//tests        
 
-        QUnit.asyncTest("subtree", 8, function() {
+        QUnit.asyncTest("subtree", function() {
             var deferred = utils.asyncAutocomplete(300);
 
             var $test = $("<div><span></span></div>");
@@ -17,6 +17,8 @@ define(["utils"], function(utils) {
             var $tar;
             var observer = new MutationObserver(function(items, observer) {
                 if(called === 0) {
+                    ok(items.every(function(item) {return item.type === "childList"; }), "Can observe only childList on the subtree");
+
                     ok(utils.expectedMutations(items, changes), "childList + subtree notices all nested added items");
                     ok(items.every(function(item) { return item.target === $teste[0]; }), "subtree is called with correct target");
                     ok(items.every(function(item) { return item.type === "childList"; }), "subtree is called with type='childList'");
@@ -59,7 +61,26 @@ define(["utils"], function(utils) {
                 added.push("<span>" + i + "</span>");
             }
             changes.addedNodes = added = utils.$makeArray(added);
-            $teste.append(added);
+            $teste.append(added).addClass("dont create mutation");
+
+
+            // observing attribuets on subtree tests
+            var $test2 = $("<div><span class='name'>3</span><span class='name'>2</span><span class='name'>1</span></div>");
+            var teste2 = $test2.get(0);
+            var $tar2 = utils.$randomChild($test2);
+            var observer3 = new MutationObserver(function(items, observer) {
+                ok(items.every(function(item) {return item.type === "attributes"; }), "Can observe only attributes on the subtree");
+
+                equal(items.length, 1, "Can observe attributes of subtree");
+                equal(items[0].target, $tar2.get(0), "Called with the correct target on the subtree");
+                equal(items[0].attributeName, "class", "Called with the correct attribute name in the subtree");
+            });
+            observer3.observe(teste2, {
+                attributes: true,
+                subtree: true
+            });
+            $tar2.get(0).className += "attribute subtree test";
+            $tar2.append("<span class='a'>text</span>");
 
             deferred.done(function() {
                 observer.disconnect();

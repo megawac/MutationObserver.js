@@ -81,6 +81,14 @@ define([], function() {
             }, []);
         },
 
+        reduceTypes: function(mutations) {
+            return mutations.reduce(function(memo, mut) {
+                if(memo[mut.type]) memo[mut.type] += 1;
+                else memo[mut.type] = 1;
+                return memo;
+            }, {});
+        },
+
         expectedMutations: function(mutations, expected) {
             var changes = {
                 addedNodes: utils.reduceNodes(mutations,"addedNodes"),

@@ -35,8 +35,8 @@ window.MutationObserver = (function(window) {
          */
         var MutationRecord = function(data) {
             var settings = {
-                target: null,
                 type: null,
+                target: null,
                 addedNodes: [],
                 removedNodes: [],
                 attributeName: null,
@@ -93,8 +93,8 @@ window.MutationObserver = (function(window) {
                     if (attr.value !== old[name]) {
                         //The pushing is redundant but gzips very nicely
                         mutations.push(MutationRecord({
-                            target: $ele,
                             type: "attributes",
+                            target: $ele,
                             attributeName: name,
                             oldValue: old[name],
                             attributeNamespace: attr.namespaceURI //in ie<8 it incorrectly will return undefined... is it worth handling it and making it null?
@@ -126,21 +126,6 @@ window.MutationObserver = (function(window) {
          * @param {MOConfig} config
          * @return {Elestruct}
          */
-        var clone = function(par, config) {
-            var copy = function(par, top) {
-                return {
-                    /** @type {Element} */
-                    node: par,
-                    /** @type {Array.<Elestruct>} */
-                    kids: config.kids && (top || config.descendents) ? map.call(par.childNodes, function(node) {
-                        return copy(node);
-                    }) : null,
-                    /** @type {Object.<string, string>} */
-                    attr: config.attr && (top || config.descendents) && par.nodeType !== 3 ? cloneAttributes(par, config.afilter) : null
-                };
-            };
-            return copy(par, true);
-        };
 
         //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
         var counter = 1; //don't use 0 as id (falsy)
@@ -180,30 +165,16 @@ window.MutationObserver = (function(window) {
         };
 
         /**
-         * findChildMutations: array of mutations so far, element, element clone, bool => array of mutations
+         * searchSubtree: array of mutations so far, element, element clone, bool => array of mutations
          * synchronous dfs comparision of two nodes
+         * This function is applied to any observed element with childList or subtree specified
          *
          * @param {Array} mutations
          * @param {Element} target
          * @param {Elestruct} oldstate
          * @param {MOConfig} config
          */
-        var findChildMutations = function(mutations, target, oldstate, config) {
-            var add = function(node) {
-                mutations.push(MutationRecord({
-                    type: "childList",
-                    target: node.parentNode, //support for ff<9
-                    addedNodes: [node]
-                }));
-            };
-            var rem = function(node, tar) { //have to pass tar because node.parentElement will be null when removed
-                mutations.push(MutationRecord({
-                    type: "childList",
-                    target: tar,
-                    removedNodes: [node]
-                }));
-            };
-
+        var searchSubtree = function(mutations, target, oldstate, config) {
             /**
              * @param {Element} node
              * @param {Elestruct} old
@@ -234,14 +205,27 @@ window.MutationObserver = (function(window) {
                     conflicts.forEach(function(conflict) {
                         //attempt to determine if there was node rearrangement... won't gaurentee all matches
                         //also handles case where added/removed nodes cause nodes to be identified as conflicts
-                        if (counter && Math.abs(conflict.i - conflict.j) >= size) {
-                            add($kids[conflict.i]); //rearrangment ie removed then readded
-                            rem($kids[conflict.i], old.node);
+                        if (config.kids && counter && Math.abs(conflict.i - conflict.j) >= size) {
+                            mutations.push(MutationRecord({
+                                type: "childList",
+                                target: node,
+                                addedNodes: [$kids[conflict.i]],
+                                removedNodes: [$kids[conflict.i]]
+                            }));
                             counter--; //found conflict
-                        } else { //conflicts resolved - check subtree and attributes
-                            if (config.descendents) findMut($kids[conflict.i], $oldkids[conflict.j]);
-                            if (config.attr && $oldkids[conflict.j].attr) findAttributeMutations(mutations, $kids[conflict.i], $oldkids[conflict.j].attr, config.afilter);
                         }
+
+                        //Alright we found the resorted nodes now check for other types of mutations
+                        if (config.attr && $oldkids[conflict.j].attr) findAttributeMutations(mutations, $kids[conflict.i], $oldkids[conflict.j].attr, config.afilter);
+                        if (config.charData && $kids[conflict.i].nodeType === 3 && $kids[conflict.i].nodeValue !== $oldkids[conflict.j].charData) {
+                            mutations.push({
+                                type: "characterData",
+                                target: $kids[conflict.i],
+                                oldValue: $oldkids[conflict.j].charData
+                            });
+                        }
+                        //now look @ subtree
+                        if (config.descendents) findMut($kids[conflict.i], $oldkids[conflict.j]);
                     });
                     conflicts = []; //clear conflicts
                 };
@@ -249,20 +233,30 @@ window.MutationObserver = (function(window) {
                 //current and old nodes
                 var $cur;
                 var $old;
+                var oldstruct;
 
                 //iterate over both old and current child nodes at the same time
                 for (var i = 0, j = 0; i < klen || j < olen;) {
                     //current and old nodes at the indexs
                     $cur = $kids[i];
-                    $old = j < olen && $oldkids[j].node;
+                    oldstruct = $oldkids[j];
+                    $old = oldstruct && oldstruct.node;
 
-                    if ($cur === $old) { //simple expected case - needs to be as fast as possible
-                        //recurse on next level of children
-                        if (config.descendents) findMut($cur, $oldkids[j]);
-                        if (config.attr && $oldkids[j].attr) findAttributeMutations(mutations, $cur, $oldkids[j].attr, config.afilter);
+                    if ($cur === $old) { //simple expected case - optimized for this case
+                        if (config.attr && oldstruct.attr) /* oldstruct.attr instead of textnode check */findAttributeMutations(mutations, $cur, oldstruct.attr, config.afilter);
+                        if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
+                            mutations.push({
+                                type: "characterData",
+                                target: $cur,
+                                oldValue: oldstruct.charData
+                            });
+                        }
 
                         //resolve conflicts
                         if (conflicts.length) resolveConflicts();
+
+                        //recurse on next level of children
+                        if (config.descendents) findMut($cur, oldstruct);
 
                         i++;
                         j++;
@@ -270,9 +264,14 @@ window.MutationObserver = (function(window) {
                         if ($cur) {
                             //check id is in the location map otherwise do a indexOf search
                             if (!has(map, (id = getId($cur)))) { //not already found
-                                /* jshint loopfunc:true */
                                 if ((idx = indexOfCustomNode($oldkids, $cur, j)) === -1) { //custom indexOf using comparitor
-                                    add($cur); //$cur is a new node
+                                    if(config.kids) {
+                                        mutations.push(MutationRecord({
+                                            type: "childList",
+                                            target: node,
+                                            addedNodes: [$cur]//$cur is a new node
+                                        }));
+                                    }
                                 } else {
                                     map[id] = true; //mark id as found
                                     conflicts.push({ //add conflict
@@ -287,7 +286,13 @@ window.MutationObserver = (function(window) {
                         if ($old) {
                             if (!has(map, (id = getId($old)))) {
                                 if ((idx = indexOf.call($kids, $old, i)) === -1) { //dont need to use a special indexof
-                                    rem($old, old.node);
+                                    if(config.kids) {
+                                        mutations.push(MutationRecord({
+                                            type: "childList",
+                                            target: old.node,
+                                            removedNodes: [$old]
+                                        }));
+                                    }
                                 } else if (idx === 0) { //special case: if idx=0 i and j are congurent so we can continue without conflict
                                     continue;
                                 } else {
@@ -305,6 +310,34 @@ window.MutationObserver = (function(window) {
                 if (conflicts.length) resolveConflicts();
             };
             findMut(target, oldstate);
+        };
+
+        var clone = function(par, config) {
+            var copy = function(par, top) {
+                var isText = par.nodeType === 3;
+                var elestruct = {
+                    /** @type {Element} */
+                    node: par
+                };
+
+                if(config.attr && !isText && (top || config.descendents)) {
+                    /** @type {Object.<string, string>} */
+                    elestruct.attr = cloneAttributes(par, config.afilter);
+                }
+
+                if(config.charData && isText) {
+                    elestruct.charData = par.nodeValue;
+                }
+
+                if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
+                    /** @type {Array.<Elestruct>} */
+                    elestruct.kids = map.call(par.childNodes, function(node) {
+                        return copy(node);
+                    });
+                }
+                return elestruct;
+            };
+            return copy(par, true);
         };
 
         /**
@@ -330,9 +363,9 @@ window.MutationObserver = (function(window) {
                     findAttributeMutations(mutations, $target, $old.attr, config.afilter);
                 }
 
-                //check childlist + subtree?
-                if (config.kids) {
-                    findChildMutations(mutations, $target, $old, config);
+                //check childlist or subtree for mutations
+                if (config.kids || config.descendents) {
+                    searchSubtree(mutations, $target, $old, config);
                 }
 
 
@@ -341,8 +374,6 @@ window.MutationObserver = (function(window) {
                     /** type {Elestuct} */
                     $old = clone($target, config);
                 }
-
-                // Hallelujah done on to next observed item?
             };
         };
 
@@ -407,8 +438,9 @@ window.MutationObserver = (function(window) {
                 attr: !! (config.attributes || config.attributeFilter || config.attributeOldValue),
 
                 //some browsers are strict in their implementation that config.subtree and childList must be set together. We don't care - spec doesn't specify
-                kids: !! (config.childList || config.subtree),
-                descendents: !! config.subtree
+                kids: !! config.childList,
+                descendents: !! config.subtree,
+                charData: !! (config.characterData || config.characterDataOldValue)
             };
             if (config.attributeFilter) {
                 //converts to a {key: true} dict for faster lookup

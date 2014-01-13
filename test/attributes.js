@@ -71,7 +71,6 @@ define(["utils"], function(utils) {
             });
             observer3.observe(teste2, {
                 attributes: true,
-                childList: true,
                 subtree: true
             });
             $tar.get(0).className += "attribute subtree test";
