@@ -116,7 +116,6 @@ window.MutationObserver = (function(window) {
         };
 
         /*subtree and childlist helpers*/
-        //discussion: http://codereview.stackexchange.com/questions/38351
 
         /**
          * clone an html node into a custom datastructure
@@ -157,17 +156,19 @@ window.MutationObserver = (function(window) {
          * @param {number} from
          * @returns {number}
          */
-        var indexOfCustomNode = function(set, $node, from) {
-            for (var i = ~~from, l = set.length; i < l; i++) {
-                if (set[i].node === $node) return i;
+        var indexOfCustomNode = function(set, $node, idx) {
+            for (/*idx = ~~idx*/; idx < set.length; idx++) {//idx is always given for this function
+                if (set[idx].node === $node) return idx;
             }
             return -1;
         };
 
         /**
-         * searchSubtree: array of mutations so far, element, element clone, bool => array of mutations
+         * searchSubtree: array of mutations so far, element, element clone, bool
          * synchronous dfs comparision of two nodes
          * This function is applied to any observed element with childList or subtree specified
+         * Sorry this is kind of confusing as shit, tried to comment it a bit...
+         * codereview.stackexchange.com/questions/38351 discussion of an earlier version of this func
          *
          * @param {Array} mutations
          * @param {Element} target
@@ -175,6 +176,47 @@ window.MutationObserver = (function(window) {
          * @param {MOConfig} config
          */
         var searchSubtree = function(mutations, target, oldstate, config) {
+            /*
+             * Helper to identify node rearrangment and stuff... 
+             * There is no gaurentee that the same node will be identified for both added and removed nodes
+             * if the positions have been shuffled.
+             */
+            var resolveConflicts = function(conflicts, node, $kids, $oldkids) {
+                var size = conflicts.length - 1;
+                var counter = -~(size / 2); //prevents same conflict being resolved twice consider when two nodes switch places. only one should be given a mutation event (note -~ is math.ceil shorthand)
+                var $cur;
+                var oldstruct;
+                conflicts.forEach(function(conflict) {
+                    $cur = $kids[conflict.i];
+                    oldstruct = $oldkids[conflict.j];
+
+                    //attempt to determine if there was node rearrangement... won't gaurentee all matches
+                    //also handles case where added/removed nodes cause nodes to be identified as conflicts
+                    if (config.kids && counter && Math.abs(conflict.i - conflict.j) >= size) {
+                        mutations.push(MutationRecord({
+                            type: "childList",
+                            target: node,
+                            addedNodes: [$cur],
+                            removedNodes: [$cur]
+                        }));
+                        counter--; //found conflict
+                    }
+
+                    //Alright we found the resorted nodes now check for other types of mutations
+                    if (config.attr && oldstruct.attr) findAttributeMutations(mutations, $cur, oldstruct.attr, config.afilter);
+                    if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
+                        mutations.push({
+                            type: "characterData",
+                            target: $cur,
+                            oldValue: oldstruct.charData
+                        });
+                    }
+                    //now look @ subtree
+                    if (config.descendents) findMut($cur, oldstruct);
+                });
+                conflicts.length = 0; //clear conflicts
+            };
+
             /**
              * @param {Element} node
              * @param {Elestruct} old
@@ -187,53 +229,18 @@ window.MutationObserver = (function(window) {
 
                 if (!olen && !klen) return; //both empty; clearly no changes
 
-                //id to i and j search hash to prevent double checking an element
-                var map = {};
-                var id;
+                //we delay the intialization of these for marginal performance in the expected case (actually quite signficant on large subtrees when these would be otherwise unused)
+                //map of checked element of ids to prevent registering the same conflict twice
+                var map;
+                //array of potential conflicts (ie nodes that may have been re arranged)
+                var conflicts;
+                var id; //element id from getId helper
                 var idx; //index of a moved or inserted element
 
-                //array of potention conflict hashes
-                var conflicts = [];
-
-                /*
-                 * There is no gaurentee that the same node will be returned for both added and removed nodes
-                 * if the positions have been shuffled.
-                 */
-                var resolveConflicts = function() {
-                    var size = conflicts.length - 1;
-                    var counter = -~(size / 2); //prevents same conflict being resolved twice consider when two nodes switch places. only one should be given a mutation event (note -~ is math.ceil shorthand)
-                    conflicts.forEach(function(conflict) {
-                        //attempt to determine if there was node rearrangement... won't gaurentee all matches
-                        //also handles case where added/removed nodes cause nodes to be identified as conflicts
-                        if (config.kids && counter && Math.abs(conflict.i - conflict.j) >= size) {
-                            mutations.push(MutationRecord({
-                                type: "childList",
-                                target: node,
-                                addedNodes: [$kids[conflict.i]],
-                                removedNodes: [$kids[conflict.i]]
-                            }));
-                            counter--; //found conflict
-                        }
-
-                        //Alright we found the resorted nodes now check for other types of mutations
-                        if (config.attr && $oldkids[conflict.j].attr) findAttributeMutations(mutations, $kids[conflict.i], $oldkids[conflict.j].attr, config.afilter);
-                        if (config.charData && $kids[conflict.i].nodeType === 3 && $kids[conflict.i].nodeValue !== $oldkids[conflict.j].charData) {
-                            mutations.push({
-                                type: "characterData",
-                                target: $kids[conflict.i],
-                                oldValue: $oldkids[conflict.j].charData
-                            });
-                        }
-                        //now look @ subtree
-                        if (config.descendents) findMut($kids[conflict.i], $oldkids[conflict.j]);
-                    });
-                    conflicts = []; //clear conflicts
-                };
-
+                var oldstruct;
                 //current and old nodes
                 var $cur;
                 var $old;
-                var oldstruct;
 
                 //iterate over both old and current child nodes at the same time
                 for (var i = 0, j = 0; i < klen || j < olen;) {
@@ -242,8 +249,10 @@ window.MutationObserver = (function(window) {
                     oldstruct = $oldkids[j];
                     $old = oldstruct && oldstruct.node;
 
-                    if ($cur === $old) { //simple expected case - optimized for this case
+                    if ($cur === $old) { //expected case - optimized for this case
+                        //check attributes as specified by config
                         if (config.attr && oldstruct.attr) /* oldstruct.attr instead of textnode check */findAttributeMutations(mutations, $cur, oldstruct.attr, config.afilter);
+                        //check character data if set
                         if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
                             mutations.push({
                                 type: "characterData",
@@ -253,7 +262,7 @@ window.MutationObserver = (function(window) {
                         }
 
                         //resolve conflicts
-                        if (conflicts.length) resolveConflicts();
+                        if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids);
 
                         //recurse on next level of children
                         if (config.descendents) findMut($cur, oldstruct);
@@ -261,10 +270,16 @@ window.MutationObserver = (function(window) {
                         i++;
                         j++;
                     } else { //(uncommon case) lookahead until they are the same again or the end of children
+                        if(!map) {//delayed initalization
+                            map = {};
+                            conflicts = [];
+                        }
                         if ($cur) {
                             //check id is in the location map otherwise do a indexOf search
-                            if (!has(map, (id = getId($cur)))) { //not already found
-                                if ((idx = indexOfCustomNode($oldkids, $cur, j)) === -1) { //custom indexOf using comparitor
+                            id = getId($cur);
+                            if (!has(map, id)) { //to prevent double checking
+                                idx = indexOfCustomNode($oldkids, $cur, j);//custom indexOf using comparitor checking oldkids[i].node === $cur
+                                if (idx === -1) {
                                     if(config.kids) {
                                         mutations.push(MutationRecord({
                                             type: "childList",
@@ -305,9 +320,11 @@ window.MutationObserver = (function(window) {
                             }
                             j++;
                         }
-                    }
-                }
-                if (conflicts.length) resolveConflicts();
+                    }//end uncommon case
+                }//end loop
+
+                //resolve any remaining conflicts
+                if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids);
             };
             findMut(target, oldstate);
         };
@@ -412,7 +429,7 @@ window.MutationObserver = (function(window) {
          * @type {number}
          * @expose
          */
-        MutationObserver._period = 30 /*+runtime*/ ;
+        MutationObserver._period = 30 /*ms+runtime*/ ;
 
         /**
          * see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
