@@ -51,18 +51,28 @@ define([], function() {
             subtree: true
         },
         {
-            attributes: true
+            attributes: true,
+            simple: true
         },
         {
             attributes: true,
-            attributeFilter: ["id", "style"]
+            attributeFilter: ["id", "style"],
+            simple: true
         },
         {
             attributes: true,
             subtree: true
+        }, {
+            characterData: true,
+            childList: true
+        }, {
+            characterData: true,
+            childList: true,
+            subtree: true
         }].forEach(function(context) {
-
-            [small, mid, large].forEach(function(test) {
+            var items = context.simple ? [large] : [small, mid, large];
+            delete context.simple;
+            (items).forEach(function(test) {
                 var ele = test.$ele[0];
 
                 var description = Object.keys(context).join("+") + " search on element with " + test.children + " children and " + test.descendents + " descendents and " + test.attributes + " attributes per node";
