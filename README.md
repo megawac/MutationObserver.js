@@ -29,10 +29,15 @@ Currently supports the following [MutationObserverInit properties](https://devel
 * **attributes**: Set to truthy if mutations to target's children are to be observed.
 * **attributeFilter**: Set to an array of attribute local names (without namespace) if not all attribute mutations need to be observed.
 * **attributeOldValue**: doesn't do anything attributes are always called with old value
+* **characterData**: currently follows Mozilla's implementation in that it will only watch `textNodes` values and not, like in webkit, where setting .innerHTML will add a characterData mutation.
 
 ### Performance
 
-By default, the polyfill will check observed nodes about 25 times per second (~30 ms interval) for mutations. Try running the [JSLitmus tests in the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html). From my tests of expected case (no mutations), ie9 can run the `childList` algorithm on an element with 50 children about 2800 times/sec enabled and ``subtree` on an element with 250 sub-children 550 times. Set `MutationObserver_period` to change the interval.
+By default, the polyfill will check observed nodes about 25 times per second (30 ms interval) for mutations. Try running [these jsperf.com tests](jsperf.com/mutationobserver-shim) and the JSLitmus tests in the test suite for usage performance tests. 
+
+From my tests observing any size element without `subtree` enabled is relatively cheap. Although I've optimized the subtree check to the best of my abilities it can be costly on large trees. You can draw your own conclusions based on the tests noting that you can expect the `mo` to do its check 28+ times a second.
+
+Although supported, I'd recommend against watching `attributes` on the `subtree` on large structures, as the check is complex and expensive on terrible hardware like my phone :(
 
 ### Dependencies and Compatibility
 
@@ -45,15 +50,16 @@ The polyfill relies on the following methods to be supported or shimmed:
 
 I've tested and verified compatibility in the following browsers
 
-* Internet Explorer 9, 10 in win7 and win8
-* Firefox 21, 24, 26 in OSX, win7 and win8
-* Opera 12.16 in win7
+* Internet Explorer 8 (emulated), 9, 10 in win7 and win8
+* Firefox 4, 21, 24, 26 in OSX, win7 and win8
+* Opera 11.8, 12.16 in win7
 * Safari 6.0.5 on OSX
 * "Internet" on Android HTC One V
+* Blackberry 6.0.16
 
 Try [running the test suite](https://rawgithub.com/megawac/MutationObserver.js/master/test/index.html) and see some simple example usage:
 
 * http://jsbin.com/uxAQEWuL/3 listen to images being appended dynamically
 * http://jsbin.com/uxAQEWuL/5 autoscroll an element as new content is added
 
-See http://dev.opera.com/articles/view/mutation-observers-tutorial/ for sample usage.
+See http://dev.opera.com/articles/view/mutation-observers-tutorial/ for some sample usage.
