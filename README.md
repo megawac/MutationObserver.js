@@ -12,8 +12,6 @@ A polyfill for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131
 * Implemented using a recursive `setTimeout` (every ~30 ms) rather than using a `setImmediate` polyfill; so calls will be made less frequently and likely with more data than the standard MutationObserver. In addition, it can miss changes that occur and then are lost in the interval window.
 * Setting an observed elements html using `innerHTML` will call `childList` observer listeners with several mutations with only 1 addedNode or removed node per mutation. With the standard you would have 1 call with multiple nodes in addedNodes and removedNodes node lists.
 * With `childList` and `subtree` changes in node order (eg first element gets swapped with last) should fire a `addedNode` and `removedNode` mutation but the correct node may not always be identified.
-* Currently does not support watching attributes on `childList`/`subtree`. Will add support next version
-* Character data yet not supported
 
 #### MutationRecord
 
