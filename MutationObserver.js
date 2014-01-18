@@ -6,7 +6,7 @@
  * Though credit and staring the repo will make me feel pretty, you can modify and redistribute as you please.
  * See https://github.com/WebKit/webkit/blob/master/Source/WebCore/dom/MutationObserver.cpp for current webkit source c++ implementation
  */
-window.MutationObserver = (function(window) {
+window.MutationObserver = (function(window, undefined) {
     "use strict";
     /*
     prefix bugs:
@@ -17,7 +17,6 @@ window.MutationObserver = (function(window) {
     if (!MutationObserver) {
         var indexOf = Array.prototype.indexOf;
         var map = Array.prototype.map;
-        // var reduce = Array.prototype.reduce;
 
         /**
          * @param {Object} obj
@@ -25,7 +24,7 @@ window.MutationObserver = (function(window) {
          * @returns {boolean}
          */
         var has = function(obj, prop) {
-            return typeof obj[prop] !== "undefined";
+            return obj[prop] !== undefined; //will be nicely inlined by gcc
         };
 
         /**
@@ -34,7 +33,7 @@ window.MutationObserver = (function(window) {
          * @constructor
          */
         var MutationRecord = function(data) {
-            var settings = {
+            var settings = {//technically these should be on proto so hasOwnProperty will return false for non explicitly props
                 type: null,
                 target: null,
                 addedNodes: [],
@@ -62,7 +61,8 @@ window.MutationObserver = (function(window) {
             var attrs = {};
             var attributes = $e.attributes;
             var attr;
-            for (var i = 0, l = attributes.length; i < l; i++) { //using native reduce was ~30% slower
+            var i = attributes.length;
+            while (i--) { //using native reduce was ~30% slower
                 attr = attributes[i];
                 if (!filter || filter[attr.name]) {
                     attrs[attr.name] = attr.value;
@@ -86,10 +86,11 @@ window.MutationObserver = (function(window) {
             var attributes = $ele.attributes;
             var attr;
             var name;
-            for (var i = 0, l = attributes.length; i < l; i++) {
+            var i = attributes.length;
+            while (i--) {
                 attr = attributes[i];
                 name = attr.name;
-                if (!filter || filter[name]) {
+                if (!filter || has(filter, name)) {
                     if (attr.value !== old[name]) {
                         //The pushing is redundant but gzips very nicely
                         mutations.push(MutationRecord({
@@ -153,11 +154,11 @@ window.MutationObserver = (function(window) {
          *
          * @param {Element} set
          * @param {Elestruct} $node
-         * @param {number} from
+         * @param {number} from : index to start the loop
          * @returns {number}
          */
         var indexOfCustomNode = function(set, $node, idx) {
-            for (/*idx = ~~idx*/; idx < set.length; idx++) {//idx is always given for this function
+            for (/*idx = ~~idx*/; idx < set.length; idx++) {//start idx is always given for this function
                 if (set[idx].node === $node) return idx;
             }
             return -1;
@@ -186,7 +187,8 @@ window.MutationObserver = (function(window) {
                 var counter = -~(size / 2); //prevents same conflict being resolved twice consider when two nodes switch places. only one should be given a mutation event (note -~ is math.ceil shorthand)
                 var $cur;
                 var oldstruct;
-                conflicts.forEach(function(conflict) {
+                var conflict;
+                while((conflict = conflicts.pop())) {
                     $cur = $kids[conflict.i];
                     oldstruct = $oldkids[conflict.j];
 
@@ -213,8 +215,7 @@ window.MutationObserver = (function(window) {
                     }
                     //now look @ subtree
                     if (config.descendents) findMut($cur, oldstruct);
-                });
-                conflicts.length = 0; //clear conflicts
+                }
             };
 
             /**
@@ -226,7 +227,6 @@ window.MutationObserver = (function(window) {
                 var $oldkids = old.kids;
                 var klen = $kids.length;
                 var olen = $oldkids.length;
-
                 if (!olen && !klen) return; //both empty; clearly no changes
 
                 //we delay the intialization of these for marginal performance in the expected case (actually quite signficant on large subtrees when these would be otherwise unused)
@@ -241,9 +241,11 @@ window.MutationObserver = (function(window) {
                 //current and old nodes
                 var $cur;
                 var $old;
-
+                
                 //iterate over both old and current child nodes at the same time
-                for (var i = 0, j = 0; i < klen || j < olen;) {
+                var i = 0, j = 0;
+                //while there is still anything left in $kids or $oldkids (same as i < $kids.length || j < $oldkids.length;)
+                while( i < klen || j < olen ) {
                     //current and old nodes at the indexs
                     $cur = $kids[i];
                     oldstruct = $oldkids[j];
@@ -264,8 +266,8 @@ window.MutationObserver = (function(window) {
                         //resolve conflicts
                         if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids);
 
-                        //recurse on next level of children
-                        if (config.descendents) findMut($cur, oldstruct);
+                        //recurse on next level of children. Avoids the recursive call when $cur.firstChild is null and kids.length is 0
+                        if (config.descendents /*&& ($cur.firstChild || oldstruct.kids.length)*/) findMut($cur, oldstruct);
 
                         i++;
                         j++;
@@ -329,6 +331,13 @@ window.MutationObserver = (function(window) {
             findMut(target, oldstate);
         };
 
+        /**
+         * Cones a element into a custom data structure designed for comparision. https://gist.github.com/megawac/8201012
+         * 
+         * @param {Element} par
+         * @param {MOConfig} config
+         * @returns {Elestruct}
+         */
         var clone = function(par, config) {
             var copy = function(par, top) {
                 var isText = par.nodeType === 3;
@@ -420,7 +429,7 @@ window.MutationObserver = (function(window) {
                  * @type {number?}
                  * @private
                  */
-                self._timeout = window.setTimeout(self._checker, MutationObserver._period);
+                self._timeout = setTimeout(self._checker, MutationObserver._period);
             };
         };
 
@@ -437,6 +446,7 @@ window.MutationObserver = (function(window) {
          * @param {element} $target
          * @param {Object} config
          * @expose
+         * @returns undefined
          */
         MutationObserver.prototype.observe = function($target, config) {
             var watched = this._watched;
@@ -488,7 +498,7 @@ window.MutationObserver = (function(window) {
             var mutations = [];
             var watched = this._watched;
 
-            for (var i = 0, l = watched.length; i < l; i++) {
+            for (var i = 0; i < watched.length; i++) {
                 watched[i].fn(mutations);
             }
 
@@ -497,10 +507,11 @@ window.MutationObserver = (function(window) {
 
         /**
          * @expose
+         * @returns undefined
          */
         MutationObserver.prototype.disconnect = function() {
             this._watched.length = 0; //clear the stuff being observed
-            window.clearTimeout(this._timeout); //ready for garbage collection
+            clearTimeout(this._timeout); //ready for garbage collection
             /**
              * @type {number?}
              * @private
