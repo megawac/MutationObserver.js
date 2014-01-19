@@ -244,11 +244,11 @@ window.MutationObserver = (function(window, undefined) {
                     //Alright we found the resorted nodes now check for other types of mutations
                     if (config.attr && oldstruct.attr) findAttributeMutations(mutations, $cur, oldstruct.attr, config.afilter);
                     if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
-                        mutations.push({
+                        mutations.push(MutationRecord({
                             type: "characterData",
                             target: $cur,
                             oldValue: oldstruct.charData
-                        });
+                        }));
                     }
                     //now look @ subtree
                     if (config.descendents) findMut($cur, oldstruct);
@@ -294,11 +294,11 @@ window.MutationObserver = (function(window, undefined) {
                         if (config.attr && oldstruct.attr) /* oldstruct.attr instead of textnode check */findAttributeMutations(mutations, $cur, oldstruct.attr, config.afilter);
                         //check character data if set
                         if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
-                            mutations.push({
+                            mutations.push(MutationRecord({
                                 type: "characterData",
                                 target: $cur,
                                 oldValue: oldstruct.charData
-                            });
+                            }));
                         }
 
                         //resolve conflicts
