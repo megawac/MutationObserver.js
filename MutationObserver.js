@@ -48,18 +48,55 @@ window.MutationObserver = (function(window, undefined) {
             return settings;
         };
 
+
+        /**
+         * Utility
+         * Cones a element into a custom data structure designed for comparision. https://gist.github.com/megawac/8201012
+         * 
+         * @param {Element} par
+         * @param {MOConfig} config
+         * @returns {Elestruct}
+         */
+        var clone = function(par, config) {
+            var copy = function(par, top) {
+                var isText = par.nodeType === 3;
+                var elestruct = {
+                    /** @type {Element} */
+                    node: par
+                };
+
+                if(config.attr && !isText && (top || config.descendents)) {
+                    /** @type {Object.<string, string>} */
+                    elestruct.attr = cloneAttributes(par, config.afilter);
+                }
+
+                if(config.charData && isText) {
+                    elestruct.charData = par.nodeValue;
+                }
+
+                if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
+                    /** @type {Array.<Elestruct>} */
+                    elestruct.kids = map.call(par.childNodes, function(node) {
+                        return copy(node);
+                    });
+                }
+                return elestruct;
+            };
+            return copy(par, true);
+        };
+
         /* attributes + attributeFilter helpers */
 
         /**
          * clone live attribute list to an object structure {name: val}
          *
-         * @param {Element} $e
+         * @param {Element} $target
          * @param {Object} filter
          * @returns {Object.<string, string>}
          */
-        var cloneAttributes = function($e, filter) {
+        var cloneAttributes = function($target, filter) {
             var attrs = {};
-            var attributes = $e.attributes;
+            var attributes = $target.attributes;
             var attr;
             var i = attributes.length;
             while (i--) { //using native reduce was ~30% slower
@@ -77,13 +114,13 @@ window.MutationObserver = (function(window, undefined) {
          * doesnt handle the textnode case
          *
          * @param {Array.<MutationRecord>}
-         * @param {Element} $ele
-         * @param {Object.<string, string>} old
+         * @param {Element} $target
+         * @param {Object.<string, string>} $oldstate
          * @param {Object} filter
          */
-        var findAttributeMutations = function(mutations, $ele, old, filter) {
+        var findAttributeMutations = function(mutations, $target, $oldstate, filter) {
             var checked = {};
-            var attributes = $ele.attributes;
+            var attributes = $target.attributes;
             var attr;
             var name;
             var i = attributes.length;
@@ -91,26 +128,26 @@ window.MutationObserver = (function(window, undefined) {
                 attr = attributes[i];
                 name = attr.name;
                 if (!filter || has(filter, name)) {
-                    if (attr.value !== old[name]) {
+                    if (attr.value !== $oldstate[name]) {
                         //The pushing is redundant but gzips very nicely
                         mutations.push(MutationRecord({
                             type: "attributes",
-                            target: $ele,
+                            target: $target,
                             attributeName: name,
-                            oldValue: old[name],
+                            oldValue: $oldstate[name],
                             attributeNamespace: attr.namespaceURI //in ie<8 it incorrectly will return undefined... is it worth handling it and making it null?
                         }));
                     }
                     checked[name] = true;
                 }
             }
-            for (name in old) {
+            for (name in $oldstate) {
                 if (!(checked[name])) {
                     mutations.push(MutationRecord({
-                        target: $ele,
+                        target: $target,
                         type: "attributes",
                         attributeName: name,
-                        oldValue: old[name]
+                        oldValue: $oldstate[name]
                     }));
                 }
             }
@@ -172,11 +209,11 @@ window.MutationObserver = (function(window, undefined) {
          * codereview.stackexchange.com/questions/38351 discussion of an earlier version of this func
          *
          * @param {Array} mutations
-         * @param {Element} target
-         * @param {Elestruct} oldstate
+         * @param {Element} $target
+         * @param {Elestruct} $oldstate
          * @param {MOConfig} config
          */
-        var searchSubtree = function(mutations, target, oldstate, config) {
+        var searchSubtree = function(mutations, $target, $oldstate, config) {
             /*
              * Helper to identify node rearrangment and stuff... 
              * There is no gaurentee that the same node will be identified for both added and removed nodes
@@ -219,6 +256,7 @@ window.MutationObserver = (function(window, undefined) {
             };
 
             /**
+             * Main worker. Finds and adds mutations if there are any
              * @param {Element} node
              * @param {Elestruct} old
              */
@@ -227,7 +265,7 @@ window.MutationObserver = (function(window, undefined) {
                 var $oldkids = old.kids;
                 var klen = $kids.length;
                 var olen = $oldkids.length;
-                if (!olen && !klen) return; //both empty; clearly no changes
+                // if (!olen && !klen) return; //both empty; clearly no changes
 
                 //we delay the intialization of these for marginal performance in the expected case (actually quite signficant on large subtrees when these would be otherwise unused)
                 //map of checked element of ids to prevent registering the same conflict twice
@@ -267,7 +305,7 @@ window.MutationObserver = (function(window, undefined) {
                         if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids);
 
                         //recurse on next level of children. Avoids the recursive call when $cur.firstChild is null and kids.length is 0
-                        if (config.descendents /*&& ($cur.firstChild || oldstruct.kids.length)*/) findMut($cur, oldstruct);
+                        if (config.descendents && ($cur.firstChild || oldstruct.kids.length)) findMut($cur, oldstruct);
 
                         i++;
                         j++;
@@ -278,10 +316,9 @@ window.MutationObserver = (function(window, undefined) {
                         }
                         if ($cur) {
                             //check id is in the location map otherwise do a indexOf search
-                            id = getId($cur);
-                            if (!has(map, id)) { //to prevent double checking
-                                idx = indexOfCustomNode($oldkids, $cur, j);//custom indexOf using comparitor checking oldkids[i].node === $cur
-                                if (idx === -1) {
+                            if (!has(map, (id = getId($cur)))) { //to prevent double checking
+                                //custom indexOf using comparitor checking oldkids[i].node === $cur
+                                if ((idx = indexOfCustomNode($oldkids, $cur, j)) === -1) {
                                     if(config.kids) {
                                         mutations.push(MutationRecord({
                                             type: "childList",
@@ -328,42 +365,7 @@ window.MutationObserver = (function(window, undefined) {
                 //resolve any remaining conflicts
                 if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids);
             };
-            findMut(target, oldstate);
-        };
-
-        /**
-         * Cones a element into a custom data structure designed for comparision. https://gist.github.com/megawac/8201012
-         * 
-         * @param {Element} par
-         * @param {MOConfig} config
-         * @returns {Elestruct}
-         */
-        var clone = function(par, config) {
-            var copy = function(par, top) {
-                var isText = par.nodeType === 3;
-                var elestruct = {
-                    /** @type {Element} */
-                    node: par
-                };
-
-                if(config.attr && !isText && (top || config.descendents)) {
-                    /** @type {Object.<string, string>} */
-                    elestruct.attr = cloneAttributes(par, config.afilter);
-                }
-
-                if(config.charData && isText) {
-                    elestruct.charData = par.nodeValue;
-                }
-
-                if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
-                    /** @type {Array.<Elestruct>} */
-                    elestruct.kids = map.call(par.childNodes, function(node) {
-                        return copy(node);
-                    });
-                }
-                return elestruct;
-            };
-            return copy(par, true);
+            findMut($target, $oldstate);
         };
 
         /**
@@ -374,7 +376,7 @@ window.MutationObserver = (function(window, undefined) {
          */
         var createMutationSearcher = function($target, config) {
             /** type {Elestuct} */
-            var $old = clone($target, config); //create the cloned datastructure
+            var $oldstate = clone($target, config); //create the cloned datastructure
 
             /**
              * consumes array of mutations we can push to
@@ -385,20 +387,20 @@ window.MutationObserver = (function(window, undefined) {
                 var olen = mutations.length;
 
                 //Alright we check base level changes in attributes... easy
-                if (config.attr && $old.attr) {
-                    findAttributeMutations(mutations, $target, $old.attr, config.afilter);
+                if (config.attr && $oldstate.attr) {
+                    findAttributeMutations(mutations, $target, $oldstate.attr, config.afilter);
                 }
 
                 //check childlist or subtree for mutations
                 if (config.kids || config.descendents) {
-                    searchSubtree(mutations, $target, $old, config);
+                    searchSubtree(mutations, $target, $oldstate, config);
                 }
 
 
                 //reclone data structure if theres changes
                 if (mutations.length !== olen) {
                     /** type {Elestuct} */
-                    $old = clone($target, config);
+                    $oldstate = clone($target, config);
                 }
             };
         };
@@ -416,7 +418,6 @@ window.MutationObserver = (function(window, undefined) {
             self._watched = [];
             /** 
              * Recursive function to check all observed items for mutations
-             * @type {function()}
              * @private
              */
             self._checker = function() {
@@ -426,7 +427,6 @@ window.MutationObserver = (function(window, undefined) {
                     listener.call(self, mutations, self); //call is not spec but consistent with other implementations
                 }
                 /** 
-                 * @type {number?}
                  * @private
                  */
                 self._timeout = setTimeout(self._checker, MutationObserver._period);
