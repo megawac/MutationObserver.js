@@ -17,6 +17,7 @@ window.MutationObserver = (function(window, undefined) {
     if (!MutationObserver) {
         var indexOf = Array.prototype.indexOf;
         var map = Array.prototype.map;
+        var reduce = Array.prototype.reduce;
 
         /**
          * @param {Object} obj
@@ -53,61 +54,47 @@ window.MutationObserver = (function(window, undefined) {
          * Utility
          * Cones a element into a custom data structure designed for comparision. https://gist.github.com/megawac/8201012
          * 
-         * @param {Element} par
+         * @param {Element} $target
          * @param {MOConfig} config
          * @returns {Elestruct}
          */
-        var clone = function(par, config) {
-            var copy = function(par, top) {
-                var isText = par.nodeType === 3;
+        var clone = function($target, config) {
+            var copy = function($target, top) {
+                var isText = $target.nodeType === 3;
                 var elestruct = {
                     /** @type {Element} */
-                    node: par
+                    node: $target
                 };
 
                 if(config.attr && !isText && (top || config.descendents)) {
-                    /** @type {Object.<string, string>} */
-                    elestruct.attr = cloneAttributes(par, config.afilter);
+                    /**
+                     * clone live attribute list to an object structure {name: val}
+                     * @type {Object.<string, string>}
+                     */
+                    elestruct.attr = reduce.call($target.attributes, function(memo, attr) {
+                        if (!config.afilter || config.afilter[attr.name]) {
+                            memo[attr.name] = attr.value;
+                        }
+                        return memo;
+                    }, {});
                 }
 
                 if(config.charData && isText) {
-                    elestruct.charData = par.nodeValue;
+                    elestruct.charData = $target.nodeValue;
                 }
 
                 if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
                     /** @type {Array.<Elestruct>} */
-                    elestruct.kids = map.call(par.childNodes, function(node) {
+                    elestruct.kids = map.call($target.childNodes, function(node) {
                         return copy(node);
                     });
                 }
                 return elestruct;
             };
-            return copy(par, true);
+            return copy($target, true);
         };
 
         /* attributes + attributeFilter helpers */
-
-        /**
-         * clone live attribute list to an object structure {name: val}
-         *
-         * @param {Element} $target
-         * @param {Object} filter
-         * @returns {Object.<string, string>}
-         */
-        var cloneAttributes = function($target, filter) {
-            var attrs = {};
-            var attributes = $target.attributes;
-            var attr;
-            var i = attributes.length;
-            while (i--) { //using native reduce was ~30% slower
-                attr = attributes[i];
-                if (!filter || filter[attr.name]) {
-                    attrs[attr.name] = attr.value;
-                }
-            }
-            return attrs;
-        };
-
 
         /**
          * fast helper to check to see if attributes object of an element has changed
