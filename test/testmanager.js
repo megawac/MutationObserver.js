@@ -19,6 +19,7 @@ $(function() {
 
             var native = window.WebkitMutationObserver || window.MutationObserver;
 
+            window.WebkitMutationObserver = window.MutationObserver = {};
             window.WebkitMutationObserver = window.MutationObserver = null;//so poly goes in
 
             yepnope.injectJs("../MutationObserver.js", function() {
