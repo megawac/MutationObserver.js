@@ -82,9 +82,6 @@ module.exports = function(grunt) {
                     }, { //not supported
                         browserName: "safari",
                         version: "5"
-                    }, { //not supported
-                        browserName: "android",
-                        platform: "Linux"
                     }, {
                         browserName: "iphone",
                         version: "5"
