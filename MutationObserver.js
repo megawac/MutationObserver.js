@@ -142,15 +142,6 @@ window.MutationObserver = (function(window, undefined) {
 
         /*subtree and childlist helpers*/
 
-        /**
-         * clone an html node into a custom datastructure
-         * see https://gist.github.com/megawac/8201012
-         *
-         * @param {Element} par
-         * @param {MOConfig} config
-         * @return {Elestruct}
-         */
-
         //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
         var counter = 1; //don't use 0 as id (falsy)
         //id property
@@ -404,7 +395,7 @@ window.MutationObserver = (function(window, undefined) {
              */
             self._watched = [];
             /** 
-             * Recursive function to check all observed items for mutations
+             * Recursive timeout function to check all observed items for mutations
              * @private
              */
             self._checker = function() {
@@ -413,9 +404,7 @@ window.MutationObserver = (function(window, undefined) {
                 if (mutations.length) { //fire away
                     listener.call(self, mutations, self); //call is not spec but consistent with other implementations
                 }
-                /** 
-                 * @private
-                 */
+                /** @private */
                 self._timeout = setTimeout(self._checker, MutationObserver._period);
             };
         };
@@ -481,7 +470,6 @@ window.MutationObserver = (function(window, undefined) {
          * @returns {Array.<MutationRecords>}
          */
         MutationObserver.prototype.takeRecords = function() {
-            /** @type {Array.<MutationRecords>} */
             var mutations = [];
             var watched = this._watched;
 
@@ -499,10 +487,7 @@ window.MutationObserver = (function(window, undefined) {
         MutationObserver.prototype.disconnect = function() {
             this._watched.length = 0; //clear the stuff being observed
             clearTimeout(this._timeout); //ready for garbage collection
-            /**
-             * @type {number?}
-             * @private
-             */
+            /** @private */
             this._timeout = null;
         };
     }
