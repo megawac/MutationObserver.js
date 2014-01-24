@@ -21,8 +21,8 @@ window.MutationObserver = (function(window, undefined) {
 
         /**
          * @param {Object} obj
-         * @param {string} prop
-         * @returns {boolean}
+         * @param {(string|number)} prop
+         * @return {boolean}
          */
         var has = function(obj, prop) {
             return obj[prop] !== undefined; //will be nicely inlined by gcc
@@ -30,10 +30,11 @@ window.MutationObserver = (function(window, undefined) {
 
         /**
          * Simple MutationRecord pseudoclass. No longer exposing as its not fully compliant
-         * @param {Object}
-         * @constructor
+         * @param {Object} data
+         * @return {MutationRecord}
          */
         var MutationRecord = function(data) {
+            /** @typedef {MutationRecord} */
             var settings = {//technically these should be on proto so hasOwnProperty will return false for non explicitly props
                 type: null,
                 target: null,
@@ -54,15 +55,15 @@ window.MutationObserver = (function(window, undefined) {
          * Utility
          * Cones a element into a custom data structure designed for comparision. https://gist.github.com/megawac/8201012
          * 
-         * @param {Element} $target
-         * @param {MOConfig} config
-         * @returns {Elestruct}
+         * @param {Node} $target
+         * @param {!Object} config : A custom mutation config
+         * @return {!Object} : Cloned data structure
          */
         var clone = function($target, config) {
             var copy = function($target, top) {
                 var isText = $target.nodeType === 3;
                 var elestruct = {
-                    /** @type {Element} */
+                    /** @type {Node} */
                     node: $target
                 };
 
@@ -84,9 +85,9 @@ window.MutationObserver = (function(window, undefined) {
                 }
 
                 if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
-                    /** @type {Array.<Elestruct>} */
+                    /** @type {Array.<!Object>} : Array of custom clone */
                     elestruct.kids = map.call($target.childNodes, function(node) {
-                        return copy(node);
+                        return copy(node, false);
                     });
                 }
                 return elestruct;
@@ -100,9 +101,9 @@ window.MutationObserver = (function(window, undefined) {
          * fast helper to check to see if attributes object of an element has changed
          * doesnt handle the textnode case
          *
-         * @param {Array.<MutationRecord>}
-         * @param {Element} $target
-         * @param {Object.<string, string>} $oldstate
+         * @param {Array.<MutationRecord>} mutations
+         * @param {Node} $target
+         * @param {Object.<string, string>} $oldstate : Custom attribute clone data structure from clone
          * @param {Object} filter
          */
         var findAttributeMutations = function(mutations, $target, $oldstate, filter) {
@@ -149,8 +150,8 @@ window.MutationObserver = (function(window, undefined) {
         /**
          * Attempt to uniquely id an element for hashing. We could optimize this for legacy browsers but it hopefully wont be called enough to be a concern
          *
-         * @param {Element} $ele
-         * @returns {(number|string)}
+         * @param {Node} $ele
+         * @return {(string|number)}
          */
         var getId = function($ele) {
             try {
@@ -167,10 +168,10 @@ window.MutationObserver = (function(window, undefined) {
         /**
          * indexOf an element in a collection of custom nodes
          *
-         * @param {Element} set
-         * @param {Elestruct} $node
-         * @param {number} from : index to start the loop
-         * @returns {number}
+         * @param {Node} set
+         * @param {!Object} $node : A custom cloned node
+         * @param {number} idx : index to start the loop
+         * @return {number}
          */
         var indexOfCustomNode = function(set, $node, idx) {
             for (/*idx = ~~idx*/; idx < set.length; idx++) {//start idx is always given for this function
@@ -187,9 +188,9 @@ window.MutationObserver = (function(window, undefined) {
          * codereview.stackexchange.com/questions/38351 discussion of an earlier version of this func
          *
          * @param {Array} mutations
-         * @param {Element} $target
-         * @param {Elestruct} $oldstate
-         * @param {MOConfig} config
+         * @param {Node} $target
+         * @param {!Object} $oldstate : A custom cloned node from clone()
+         * @param {!Object} config : A custom mutation config
          */
         var searchSubtree = function(mutations, $target, $oldstate, config) {
             /*
@@ -235,8 +236,8 @@ window.MutationObserver = (function(window, undefined) {
 
             /**
              * Main worker. Finds and adds mutations if there are any
-             * @param {Element} node
-             * @param {Elestruct} old
+             * @param {Node} node
+             * @param {!Object} old : A cloned data structure using internal clone
              */
             var findMut = function(node, old) {
                 var $kids = node.childNodes;
@@ -349,8 +350,8 @@ window.MutationObserver = (function(window, undefined) {
         /**
          * Creates a func to find all the mutations
          *
-         * @param {Element} $target
-         * @param {MOConfig} config
+         * @param {Node} $target
+         * @param {!Object} config : A custom mutation config
          */
         var createMutationSearcher = function($target, config) {
             /** type {Elestuct} */
@@ -384,13 +385,13 @@ window.MutationObserver = (function(window, undefined) {
         };
 
         /**
-         * @param {function(Array.<MutationRecords>, MutationObserver)} listener
+         * @param {function(Array.<MutationRecord>, MutationObserver)} listener
          * @constructor
          */
         MutationObserver = function(listener) {
             var self = this;
             /**
-             * @type {Array.<function(Array.<MutationRecords>)>}
+             * @type {Array.<function(Array.<MutationRecord>)>}
              * @private
              */
             self._watched = [];
@@ -419,10 +420,10 @@ window.MutationObserver = (function(window, undefined) {
         /**
          * see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
          * not going to throw here but going to follow the current spec config sets
-         * @param {element} $target
-         * @param {Object} config
+         * @param {Node} $target
+         * @param {Object} config : MutationObserverInit configuration dictionary
          * @expose
-         * @returns undefined
+         * @return undefined
          */
         MutationObserver.prototype.observe = function($target, config) {
             var watched = this._watched;
@@ -435,7 +436,7 @@ window.MutationObserver = (function(window, undefined) {
 
             /** 
              * Using slightly different names so closure can go ham
-             * @type {MOConfig}
+             * @type {!Object} : A custom mutation config
              */
             var settings = {
                 attr: !! (config.attributes || config.attributeFilter || config.attributeOldValue),
@@ -446,7 +447,10 @@ window.MutationObserver = (function(window, undefined) {
                 charData: !! (config.characterData || config.characterDataOldValue)
             };
             if (config.attributeFilter) {
-                //converts to a {key: true} dict for faster lookup
+                /**
+                 * converts to a {key: true} dict for faster lookup
+                 * @type {Object.<String,Boolean>}
+                 */
                 settings.afilter = config.attributeFilter.reduce(function(a, b) {
                     a[b] = true;
                     return a;
@@ -467,7 +471,7 @@ window.MutationObserver = (function(window, undefined) {
         /**
          * Finds mutations since last check and empties the "record queue" i.e. mutations will only be found once
          * @expose
-         * @returns {Array.<MutationRecords>}
+         * @return {Array.<MutationRecord>}
          */
         MutationObserver.prototype.takeRecords = function() {
             var mutations = [];
@@ -482,7 +486,7 @@ window.MutationObserver = (function(window, undefined) {
 
         /**
          * @expose
-         * @returns undefined
+         * @return undefined
          */
         MutationObserver.prototype.disconnect = function() {
             this._watched.length = 0; //clear the stuff being observed
