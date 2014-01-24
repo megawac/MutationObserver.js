@@ -95,13 +95,15 @@ module.exports = function(grunt) {
                 options: {
                     compilation_level: "ADVANCED_OPTIMIZATIONS",
                     generate_exports: true,
+                    // language: "ECMASCRIPT3",
+
+                    // output_info: "warnings",
+                    warning_level: "VERBOSE",
 
                     banner: [
-                        "/**",
-                        " * <%= pkg.name %> v<%= pkg.version %> (<%= pkg.repository.url %>)",
-                        " * Authors: <% _.each(pkg.authors, function(author) { %><%= author.name %> (<%= author.email %>) <% }); %>",
-                        // " * Use, redistribute and modify as desired. Released under <%= pkg.license.type %> <%= pkg.license.version %>.",
-                        " */"
+                        "// <%= pkg.name %> v<%= pkg.version %> (<%= pkg.repository.url %>)",
+                        "// Authors: <% _.each(pkg.authors, function(author) { %><%= author.name %> (<%= author.email %>) <% }); %>"
+                        // "// Use, redistribute and modify as desired. Released under <%= pkg.license.type %> <%= pkg.license.version %>.",
                     ].join("\n")
                 },
                 src: ["MutationObserver.js"],
@@ -124,26 +126,37 @@ module.exports = function(grunt) {
                     }
                 }
             }
+        },
+
+        bumpup: {
+            file: "package.json"
+        },
+        tagrelease: {
+            file: "package.json",
+            commit:  true,
+            message: "Release %version%"
         }
     });
 
 
-
-    grunt.loadNpmTasks("grunt-contrib-jshint");
-    grunt.loadNpmTasks("grunt-contrib-connect");
-    grunt.loadNpmTasks("grunt-contrib-qunit");
-    grunt.loadNpmTasks("grunt-gcc");
-    grunt.loadNpmTasks("grunt-file-info");
-
+    require("matchdep").filterDev("grunt-*").forEach(grunt.loadNpmTasks);
 
     var testJobs = ["jshint", "connect", "qunit"];
     if (typeof process.env.SAUCE_ACCESS_KEY !== "undefined") {
-        grunt.loadNpmTasks("grunt-saucelabs");
         testJobs.push("saucelabs-qunit");
     }
     grunt.registerTask("test", testJobs);
+    grunt.registerTask("build", ["test", "gcc", "file_info"]);
 
-    grunt.registerTask("build", ["gcc", "file_info"]);
+    // Release alias task
+    grunt.registerTask("release", function (type) {
+        type = type ? type : "patch";
+        grunt.task.run("test");
+        grunt.task.run("bumpup:" + type); // Bump up the package version
+        grunt.task.run("gcc");
+        grunt.task.run("file_info");
+        grunt.task.run("tagrelease");     // Commit & tag the changes from above
+    });
 
-    grunt.registerTask("default", ["test", "build"]);
+    grunt.registerTask("default", ["build"]);
 };
