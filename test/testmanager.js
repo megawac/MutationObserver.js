@@ -17,19 +17,20 @@ $(function() {
         var test2 = function(context) {
             if(context && context.name !== "Native MutationObserver") return;
 
-            var native = window.WebkitMutationObserver || window.MutationObserver;
+            var original = window.WebkitMutationObserver || window.MutationObserver;
 
             window.WebkitMutationObserver = window.MutationObserver = {};
             window.WebkitMutationObserver = window.MutationObserver = null;//so poly goes in
 
-            yepnope.injectJs("../MutationObserver.js", function() {
-            // yepnope.injectJs("../dist/mutationobserver.min.js", function() {
+            var file = /\bmin=/.test(window.location.search) ? "../dist/mutationobserver.min.js" : "../MutationObserver.js";
+
+            yepnope.injectJs(file, function() {
 
                 var custom = window.MutationObserver;
 
-                if(native != custom) {//webkit doesnt allow mutation observer to be deleted
+                if(original != custom) {//webkit doesnt allow mutation observer to be deleted
                     MutationObserverTests("MutationObserver Shim");
-                    perf(custom, native);
+                    perf(custom, original);
                 } else {
                     QUnit.module("MutationObserver Shim");
                     QUnit.testSkip("Can't test shim in this browser as we cannot delete the native MutationObserver. Some implementations protect it --- lookin at you webkit");
