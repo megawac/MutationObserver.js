@@ -75,9 +75,6 @@ module.exports = function(grunt) {
                         platform: "Windows XP"
                     }, { //not supported
                         browserName: "opera",
-                        version: "11"
-                    }, { //not supported
-                        browserName: "opera",
                         version: "12"
                     }, { //not supported
                         browserName: "safari",
