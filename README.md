@@ -3,7 +3,7 @@ MutationObserver [![Build Status](https://travis-ci.org/megawac/MutationObserver
 
 [![Browser Test Status](https://saucelabs.com/browser-matrix/mutationobserver.svg)](https://saucelabs.com/u/mutationobserver)
 
-A polyfill for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131107/#mutation-observers) ([can I use?](http://caniuse.com/mutationobserver)). The polyfill is async and uses a recursive timeout fallback (default checks changes every 30ms + runtime) instead of using the deprecated [DOM3 MutationEvents](http://www.w3.org/TR/DOM-Level-3-Events/#events-mutationevents).  
+A polyfill for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131107/#mutation-observers) ([can I use?](http://caniuse.com/mutationobserver)). The polyfill is more cause we can than should (with subtree)... It's async and uses a recursive timeout fallback (default checks changes every 30ms + runtime) instead of using the deprecated [DOM3 MutationEvents](http://www.w3.org/TR/DOM-Level-3-Events/#events-mutationevents) so theoretically can support virtually any browser.  
  
 ### polyfill differences from standard interface
 
@@ -23,7 +23,7 @@ A polyfill for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131
 Currently supports the following [MutationObserverInit properties](https://developer.mozilla.org/en/docs/Web/API/MutationObserver#MutationObserverInit):
 
 * **childList**: Set to truthy if mutations to target's immediate children are to be observed.
-* **subtree**: Set to truthy to do deep scans on a target's children (as per spec, must be set with childList).
+* **subtree**: Set to truthy to do deep scans on a target's children.
 * **attributes**: Set to truthy if mutations to target's children are to be observed.
 * **attributeFilter**: Set to an array of attribute local names (without namespace) if not all attribute mutations need to be observed.
 * **attributeOldValue**: doesn't do anything attributes are always called with old value
@@ -31,7 +31,7 @@ Currently supports the following [MutationObserverInit properties](https://devel
 
 ### Performance
 
-By default, the polyfill will check observed nodes about 25 times per second (30 ms interval) for mutations. Try running [these jsperf.com tests](//jsperf.com/mutationobserver-shim) and the JSLitmus tests in the test suite for usage performance tests. 
+By default, the polyfill will check observed nodes about 25 times per second (30 ms interval) for mutations. Try running [these jsperf.com tests](http://jsperf.com/mutationobserver-shim) and the JSLitmus tests in the test suite for usage performance tests. 
 
 From my tests observing any size element without `subtree` enabled is relatively cheap. Although I've optimized the subtree check to the best of my abilities it can be costly on large trees. You can draw your own conclusions based on the tests noting that you can expect the `mo` to do its check 28+ times a second.
 
@@ -42,7 +42,6 @@ Although supported, I'd recommend against watching `attributes` on the `subtree`
 The polyfill relies on the following methods to be supported or shimmed:
 
 * `Array.prototype.indexOf`
-* `Array.prototype.forEach`
 * `Array.prototype.map`
 * `Array.prototype.reduce`
 
