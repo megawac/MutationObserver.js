@@ -2,6 +2,7 @@ MutationObserver [![Build Status](https://travis-ci.org/megawac/MutationObserver
 ========================
 
 [![Browser Test Status](https://saucelabs.com/browser-matrix/mutationobserver.svg)](https://saucelabs.com/u/mutationobserver)
+<sup>Note: Opera 11 testing was dropped due to a [sauce bug](https://saucelabs.com/jobs/33a0857111304373a90c7815ea4ee7f8/0001screenshot.png)</sup>
 
 A polyfill for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131107/#mutation-observers) ([can I use?](http://caniuse.com/mutationobserver)). The polyfill is more cause we can than should (with subtree)... It's async and uses a recursive timeout fallback (default checks changes every 30ms + runtime) instead of using the deprecated [DOM3 MutationEvents](http://www.w3.org/TR/DOM-Level-3-Events/#events-mutationevents) so theoretically can support virtually any browser.  
  
