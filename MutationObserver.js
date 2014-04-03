@@ -316,9 +316,12 @@ window.MutationObserver = (function(window, undefined) {
                             i++;
                         }
 
-                        if ($old) {
+                        if ($old &&
+                           //special case: the changes may have been resolved: i and j appear congurent so we can continue using the expected case
+                           $old !== $kids[i]
+                        ) {
                             if (!has(map, (id = getId($old)))) {
-                                if ((idx = indexOf.call($kids, $old, i)) === -1) { //dont need to use a special indexof
+                                if ((idx = indexOf.call($kids, $old, i)) === -1) { //Use Array.prototype.indexOf
                                     if(config.kids) {
                                         mutations.push(MutationRecord({
                                             type: "childList",
@@ -326,8 +329,6 @@ window.MutationObserver = (function(window, undefined) {
                                             removedNodes: [$old]
                                         }));
                                     }
-                                } else if (idx === 0) { //special case: if idx=0 i and j are congurent so we can continue without conflict
-                                    continue;
                                 } else {
                                     map[id] = true;
                                     conflicts.push({
