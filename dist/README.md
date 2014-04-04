@@ -4,4 +4,4 @@
 
 - Original: 21.9 kB
 - Minified: 3.1 kB
-- Gzipped:  777 bytes
+- Gzipped:  763 bytes
