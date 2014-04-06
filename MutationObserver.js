@@ -15,19 +15,6 @@ window.MutationObserver = (function(window, undefined) {
     */
     var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
     if (!MutationObserver) {
-        var indexOf = Array.prototype.indexOf;
-        var map = Array.prototype.map;
-        var reduce = Array.prototype.reduce;
-
-        /**
-         * @param {Object} obj
-         * @param {(string|number)} prop
-         * @return {boolean}
-         */
-        var has = function(obj, prop) {
-            return obj[prop] !== undefined; //will be nicely inlined by gcc
-        };
-
         /**
          * Simple MutationRecord pseudoclass. No longer exposing as its not fully compliant
          * @param {Object} data
@@ -60,7 +47,7 @@ window.MutationObserver = (function(window, undefined) {
          * @return {!Object} : Cloned data structure
          */
         var clone = function($target, config) {
-            var copy = function($target, top) {
+            return (function copy($target, top) {
                 var isText = $target.nodeType === 3;
                 var elestruct = {
                     /** @type {Node} */
@@ -72,7 +59,7 @@ window.MutationObserver = (function(window, undefined) {
                      * clone live attribute list to an object structure {name: val}
                      * @type {Object.<string, string>}
                      */
-                    elestruct.attr = reduce.call($target.attributes, function(memo, attr) {
+                    elestruct.attr = reduce($target.attributes, function(memo, attr) {
                         if (!config.afilter || config.afilter[attr.name]) {
                             memo[attr.name] = attr.value;
                         }
@@ -86,13 +73,26 @@ window.MutationObserver = (function(window, undefined) {
 
                 if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
                     /** @type {Array.<!Object>} : Array of custom clone */
-                    elestruct.kids = map.call($target.childNodes, function(node) {
+                    elestruct.kids = map($target.childNodes, function(node) {
                         return copy(node, false);
                     });
                 }
                 return elestruct;
-            };
-            return copy($target, true);
+            })($target, true);
+        };
+
+        /**
+         * indexOf an element in a collection of custom nodes
+         *
+         * @param {Node} set
+         * @param {!Object} $node : A custom cloned node
+         * @param {number} idx : index to start the loop
+         * @return {number}
+         */
+        var indexOfCustomNode = function(set, $node, idx) {
+            return indexOf(map(set, function(item) {
+                return item.node;
+            }), $node, idx);
         };
 
         /* attributes + attributeFilter helpers */
@@ -153,7 +153,7 @@ window.MutationObserver = (function(window, undefined) {
          * @param {Node} $ele
          * @return {(string|number)}
          */
-        var getId = function($ele) {
+        var getElementId = function($ele) {
             try {
                 return $ele.id || ($ele[expando] = $ele[expando] || counter++);
             } catch (o_O) { //ie <8 will throw if you set an unknown property on a text node
@@ -163,21 +163,6 @@ window.MutationObserver = (function(window, undefined) {
                     return counter++;
                 }
             }
-        };
-
-        /**
-         * indexOf an element in a collection of custom nodes
-         *
-         * @param {Node} set
-         * @param {!Object} $node : A custom cloned node
-         * @param {number} idx : index to start the loop
-         * @return {number}
-         */
-        var indexOfCustomNode = function(set, $node, idx) {
-            for (/*idx = ~~idx*/; idx < set.length; idx++) {//start idx is always given for this function
-                if (set[idx].node === $node) return idx;
-            }
-            return -1;
         };
 
         /**
@@ -198,7 +183,7 @@ window.MutationObserver = (function(window, undefined) {
              * There is no gaurentee that the same node will be identified for both added and removed nodes
              * if the positions have been shuffled.
              */
-            var resolveConflicts = function(conflicts, node, $kids, $oldkids) {
+            function resolveConflicts(conflicts, node, $kids, $oldkids) {
                 var size = conflicts.length - 1;
                 var counter = -~(size / 2); //prevents same conflict being resolved twice consider when two nodes switch places. only one should be given a mutation event (note -~ is math.ceil shorthand)
                 var $cur;
@@ -232,14 +217,14 @@ window.MutationObserver = (function(window, undefined) {
                     //now look @ subtree
                     if (config.descendents) findMut($cur, oldstruct);
                 }
-            };
+            }
 
             /**
              * Main worker. Finds and adds mutations if there are any
              * @param {Node} node
              * @param {!Object} old : A cloned data structure using internal clone
              */
-            var findMut = function(node, old) {
+            function findMut(node, old) {
                 var $kids = node.childNodes;
                 var $oldkids = old.kids;
                 var klen = $kids.length;
@@ -251,7 +236,7 @@ window.MutationObserver = (function(window, undefined) {
                 var map;
                 //array of potential conflicts (ie nodes that may have been re arranged)
                 var conflicts;
-                var id; //element id from getId helper
+                var id; //element id from getElementId helper
                 var idx; //index of a moved or inserted element
 
                 var oldstruct;
@@ -295,7 +280,7 @@ window.MutationObserver = (function(window, undefined) {
                         }
                         if ($cur) {
                             //check id is in the location map otherwise do a indexOf search
-                            if (!has(map, (id = getId($cur)))) { //to prevent double checking
+                            if (!has(map, (id = getElementId($cur)))) { //to prevent double checking
                                 //custom indexOf using comparitor checking oldkids[i].node === $cur
                                 if ((idx = indexOfCustomNode($oldkids, $cur, j)) === -1) {
                                     if(config.kids) {
@@ -320,8 +305,8 @@ window.MutationObserver = (function(window, undefined) {
                            //special case: the changes may have been resolved: i and j appear congurent so we can continue using the expected case
                            $old !== $kids[i]
                         ) {
-                            if (!has(map, (id = getId($old)))) {
-                                if ((idx = indexOf.call($kids, $old, i)) === -1) { //Use Array.prototype.indexOf
+                            if (!has(map, (id = getElementId($old)))) {
+                                if ((idx = indexOf($kids, $old, i)) === -1) { //Use Array.prototype.indexOf
                                     if(config.kids) {
                                         mutations.push(MutationRecord({
                                             type: "childList",
@@ -344,7 +329,7 @@ window.MutationObserver = (function(window, undefined) {
 
                 //resolve any remaining conflicts
                 if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids);
-            };
+            }
             findMut($target, $oldstate);
         };
 
@@ -496,5 +481,45 @@ window.MutationObserver = (function(window, undefined) {
             this._timeout = null;
         };
     }
+
+    /**
+     * Random generic helper functions
+     * simple tailored shims of based off of underscorejs (https://github.com/jashkenas/underscore) implementations
+     */
+
+    // **map** Apply a mapping function to each item of a set
+    function map(set, iterator) {
+        var results = [];
+        for (var index = 0, l = set.length; index < l; index++) {
+            results[index] = iterator(set[index], index, set);
+        }
+        return results;
+    }
+
+    // **Reduce** builds up a single result from a list of values
+    function reduce(set, iterator, memo) {
+        for (var index = 0, l = set.length; index < l; index++) {
+            memo = iterator(memo, set[index], index, set);
+        }
+        return memo;
+    }
+
+    // **indexOf** an element in a collection of custom nodes
+    function indexOf(set, item, idx) {
+        for (/*idx = ~~idx*/; idx < set.length; idx++) {//start idx is always given as this is internal
+            if (set[idx] === item) return idx;
+        }
+        return -1;
+    }
+
+    /**
+     * @param {Object} obj
+     * @param {(string|number)} prop
+     * @return {boolean}
+     */
+    function has(obj, prop) {
+        return obj[prop] !== undefined; //will be nicely inlined by gcc
+    }
+
     return MutationObserver;
 })(window);

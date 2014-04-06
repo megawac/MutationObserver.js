@@ -38,13 +38,7 @@ From my tests observing any size element without `subtree` enabled is relatively
 
 Although supported, I'd recommend against watching `attributes` on the `subtree` on large structures, as the check is complex and expensive on terrible hardware like my phone :(
 
-### Dependencies and Compatibility
-
-The polyfill relies on the following methods to be supported or shimmed:
-
-* `Array.prototype.indexOf`
-* `Array.prototype.map`
-* `Array.prototype.reduce`
+### Compatibility
 
 I've tested and verified compatibility in the following browsers
 
