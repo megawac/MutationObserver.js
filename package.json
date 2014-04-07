@@ -2,6 +2,7 @@
   "name": "MutationObserver-Shim",
   "short name": "mutationobserver",
   "description": "MutationObserver shim",
+  "version": "0.2.4",
   "keywords": [
     "mutation observer MutationObserver"
   ],
@@ -17,7 +18,6 @@
     "url": "http://github.com/megawac/MutationObserver.js"
   },
   "main": "MutationObserver.js",
-  "version": null,
   "devDependencies": {
     "phantomjs": "1.9.x",
     "grunt": "~0.4.2",
@@ -29,7 +29,8 @@
     "grunt-file-info": "~1.0.4",
     "grunt-bumpup": "~0.5.0",
     "grunt-tagrelease": "~0.3.1",
-    "matchdep": "~0.3.0"
+    "matchdep": "~0.3.0",
+    "grunt-closurecompiler": "~0.9.9"
   },
   "scripts": {
     "test": "grunt test --verbose"

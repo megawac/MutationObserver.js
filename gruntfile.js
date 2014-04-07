@@ -87,18 +87,18 @@ module.exports = function(grunt) {
             }
         },
 
-        gcc: {
-            build: {
+        closurecompiler: {
+            minify: {
                 options: {
-                    compilation_level: "ADVANCED_OPTIMIZATIONS",
-                    generate_exports: true,
+                    // Options mapped to Closure Compiler:
+                    "compilation_level": "ADVANCED_OPTIMIZATIONS",
                     // language: "ECMASCRIPT3",
-
-                    // output_info: "warnings",
+                    generate_exports: true,
                     warning_level: "VERBOSE",
+                    // output_info: "warnings"
 
                     banner: [
-                        "// <%= pkg.name %> v<%= pkg.version %> (<%= pkg.repository.url %>)",
+                        "// <%= pkg.name %> v<%= grunt.file.readJSON('package.json').version %> (<%= pkg.repository.url %>)",
                         "// Authors: <% _.each(pkg.authors, function(author) { %><%= author.name %> (<%= author.email %>) <% }); %>"
                         // "// Use, redistribute and modify as desired. Released under <%= pkg.license.type %> <%= pkg.license.version %>.",
                     ].join("\n")
@@ -131,7 +131,7 @@ module.exports = function(grunt) {
         tagrelease: {
             file: "package.json",
             commit:  true,
-            message: "Release %version%"
+            message: "Release v%version%"
         }
     });
 
@@ -143,14 +143,14 @@ module.exports = function(grunt) {
         testJobs.push("saucelabs-qunit");
     }
     grunt.registerTask("test", testJobs);
-    grunt.registerTask("build", ["test", "gcc", "file_info"]);
+    grunt.registerTask("build", ["test", "closurecompiler", "file_info"]);
 
     // Release alias task
     grunt.registerTask("release", function (type) {
-        type = type ? type : "patch";
+        type = type || "patch";
         grunt.task.run("test");
         grunt.task.run("bumpup:" + type); // Bump up the package version
-        grunt.task.run("gcc");
+        grunt.task.run("closurecompiler");
         grunt.task.run("file_info");
         grunt.task.run("tagrelease");     // Commit & tag the changes from above
     });
