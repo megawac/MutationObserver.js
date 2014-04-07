@@ -17,7 +17,7 @@
     "url": "http://github.com/megawac/MutationObserver.js"
   },
   "main": "MutationObserver.js",
-  "version": "0.2.3",
+  "version": null,
   "devDependencies": {
     "phantomjs": "1.9.x",
     "grunt": "~0.4.2",
