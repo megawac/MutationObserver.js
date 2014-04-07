@@ -87,15 +87,15 @@ module.exports = function(grunt) {
             }
         },
 
-        closurecompiler: {
-            minify: {
+        gcc: {
+            build: {
                 options: {
-                    // Options mapped to Closure Compiler:
-                    "compilation_level": "ADVANCED_OPTIMIZATIONS",
-                    // language: "ECMASCRIPT3",
+                    compilation_level: "ADVANCED_OPTIMIZATIONS",
                     generate_exports: true,
+                    // language: "ECMASCRIPT3",
+
+                    // output_info: "warnings",
                     warning_level: "VERBOSE",
-                    // output_info: "warnings"
 
                     banner: [
                         "// <%= pkg.name %> v<%= pkg.version %> (<%= pkg.repository.url %>)",
@@ -125,33 +125,13 @@ module.exports = function(grunt) {
             }
         },
 
-        release: {
-            options: {
-                npm: false, //default: true
-                tagName: "v-<%= version %>", //default: "<%= version %>"
-                commitMessage: "Release v<%= version %>", //default: "release <%= version %>"
-                tagMessage: "tagging version <%= version %>", //default: "Version <%= version %>",
-                github: {
-                    repo: "megawac/MutationObserver.js", //put your user/repo here
-                    usernameVar: "GITHUB_USERNAME", //ENVIRONMENT VARIABLE that contains Github username 
-                    passwordVar: "GITHUB_PASSWORD" //ENVIRONMENT VARIABLE that contains Github password
-                }
-            },
-            bump: {
-                option: {
-                    bump: true,
-                    add: false, //default: true
-                    commit: false, //default: true
-                    tag: false, //default: true
-                    push: false, //default: true
-                    pushTags: false //default: true
-                }
-            },
-            release: {
-                options: {
-                    bump: false //default: true
-                }
-            }
+        bumpup: {
+            file: "package.json"
+        },
+        tagrelease: {
+            file: "package.json",
+            commit:  true,
+            message: "Release %version%"
         }
     });
 
@@ -163,16 +143,16 @@ module.exports = function(grunt) {
         testJobs.push("saucelabs-qunit");
     }
     grunt.registerTask("test", testJobs);
-    grunt.registerTask("build", ["test", "closurecompiler", "file_info"]);
+    grunt.registerTask("build", ["test", "gcc", "file_info"]);
 
     // Release alias task
     grunt.registerTask("release", function (type) {
         type = type ? type : "patch";
         grunt.task.run("test");
-        grunt.task.run("release:bump:" + type); // Commit & tag the changes from above
-        grunt.task.run("closurecompiler");
+        grunt.task.run("bumpup:" + type); // Bump up the package version
+        grunt.task.run("gcc");
         grunt.task.run("file_info");
-        grunt.task.run("release:release");
+        grunt.task.run("tagrelease");     // Commit & tag the changes from above
     });
 
     grunt.registerTask("default", ["build"]);

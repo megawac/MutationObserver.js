@@ -25,9 +25,10 @@
     "grunt-contrib-jshint": ">= 0.8",
     "grunt-contrib-qunit": "0.3.x",
     "grunt-contrib-connect": "0.6.x",
-    "grunt-closurecompiler": "0.9",
+    "grunt-gcc": "0.3.x",
     "grunt-file-info": "~1.0.4",
-    "grunt-release": "0.7",
+    "grunt-bumpup": "~0.5.0",
+    "grunt-tagrelease": "~0.3.1",
     "matchdep": "~0.3.0"
   },
   "scripts": {
