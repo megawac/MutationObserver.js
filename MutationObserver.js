@@ -306,7 +306,7 @@ window.MutationObserver = (function(window, undefined) {
                            $old !== $kids[i]
                         ) {
                             if (!has(map, (id = getElementId($old)))) {
-                                if ((idx = indexOf($kids, $old, i)) === -1) { //Use Array.prototype.indexOf
+                                if ((idx = indexOf($kids, $old, i)) === -1) {
                                     if(config.kids) {
                                         mutations.push(MutationRecord({
                                             type: "childList",
@@ -412,14 +412,6 @@ window.MutationObserver = (function(window, undefined) {
          * @return undefined
          */
         MutationObserver.prototype.observe = function($target, config) {
-            var watched = this._watched;
-            for (var i = 0; i < watched.length; i++) {
-                if (watched[i].tar === $target) {
-                    watched.splice(i, 1);
-                    break;
-                }
-            }
-
             /** 
              * Using slightly different names so closure can go ham
              * @type {!Object} : A custom mutation config
@@ -432,6 +424,17 @@ window.MutationObserver = (function(window, undefined) {
                 descendents: !! config.subtree,
                 charData: !! (config.characterData || config.characterDataOldValue)
             };
+
+            var watched = this._watched;
+
+            //remove already observed target element from pool
+            for (var i = 0; i < watched.length; i++) {
+                if (watched[i].tar === $target) {
+                    watched.splice(i, 1);
+                    break;
+                }
+            }
+
             if (config.attributeFilter) {
                 /**
                  * converts to a {key: true} dict for faster lookup
