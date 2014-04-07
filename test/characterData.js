@@ -21,7 +21,7 @@ define(["utils"], function(utils) {
             }
             findText($test.get(0));
 
-            var observer = new MutationObserver(function(items, observer) {
+            var observer = new MutationObserver(function(items) {
                 ok(items.every(function(item) {
                     return item.type === "characterData";
                 }), "Called with type 'characterData'");
@@ -35,7 +35,7 @@ define(["utils"], function(utils) {
                 subtree: true
             });
 
-            var observer2 = new MutationObserver(function(items, observer) {
+            var observer2 = new MutationObserver(function(items) {
                 deepEqual(utils.reduceTypes(items), {characterData: 2, childList: 1}, "Can observe child list and character data and will not create a mutation for a removed text node.");
                 textNodes[2].nodeValue = "asdf";//dont be dumb twice
             });

@@ -30,17 +30,17 @@ define(["utils"], function(utils) {
                 deepEqual(items, mutations, "Observer1 called with the same records from .takeRecords");
             });
 
-            var observer2 = new MutationObserver(function(items, observer) {
+            var observer2 = new MutationObserver(function(items) {
                 equal(items.length, 4, "observer2 was called correctly on the same watched element");
 
                 deepEqual(items, mutations, "Both observers called with the same changes");
             });
 
-            var observer3 = new MutationObserver(function(items, observer) {
+            var observer3 = new MutationObserver(function(items) {
                 equal(items.length, 3, "observer3 was called with only attributes mutations");
             });
 
-            var observer4 = new MutationObserver(function(items, observer) {//should not be called
+            var observer4 = new MutationObserver(function(/*items*/) {//should not be called
                 ok(false, "Take records successfully emptied record queue for observer4");
             });
 
@@ -65,7 +65,7 @@ define(["utils"], function(utils) {
 
             teste.removeAttribute("id");
             teste.setAttribute("data-test", Math.random() * 9999);
-            teste.style.display = "table";
+            teste.setAttribute("data-test2", Math.random() * 9999);
 
             $("<a>", {href: "github.com", value: "github"}).appendTo(teste);
 

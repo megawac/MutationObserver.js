@@ -26,7 +26,7 @@ define(["utils"], function(utils) {
                     test2: 2
                 }
             };
-            var observer = new MutationObserver(function(items, observer) {
+            var observer = new MutationObserver(function(items) {
                 var calls = items.reduce(function(obj, item) {
                     var n = item.type === "childList" ? item.addedNodes.length + item.removedNodes.length : 1;
                     if(item.target === teste1) {
@@ -78,7 +78,7 @@ define(["utils"], function(utils) {
 
             teste1.removeAttribute("id");
             teste1.setAttribute("data-test", Math.random() * 9999);
-            teste1.style.display = "table";
+            teste1.setAttribute("data-test2", Math.random() * 9999);
             $("<span>", {value: "hi"}).appendTo(teste1);
 
             $("<a>", {href: "github.com"}).appendTo(teste2);
@@ -89,7 +89,7 @@ define(["utils"], function(utils) {
             var teste3 = $test3.get(0);
 
 
-            var observer2 = new MutationObserver(function(items, observer) {
+            var observer2 = new MutationObserver(function(items) {
                 utils.expectMutations(items, {added: 2, attributes: 1, characterData: 1, childList: 1, removed: 2}, "Can observe multiple mutations on every config type");
             });
 

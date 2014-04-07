@@ -1,6 +1,6 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("attributes and attributeFilter", 11, function() {
+        QUnit.asyncTest("attributes and attributeFilter", 12, function() {
             var deferred = utils.asyncAutocomplete(500);
 
             var $test = $("<div>", {
@@ -13,7 +13,7 @@ define(["utils"], function(utils) {
 
             var teste = $test.get(0);
 
-            var observer = new MutationObserver(function(items, observer) {
+            var observer = new MutationObserver(function(items) {
                 equal(items.length, 3, "noticed attribute all changes");
 
                 ok(items.every(function(item) { return item.target === teste; }), "Called with the correct target");
@@ -27,11 +27,14 @@ define(["utils"], function(utils) {
                 attributeOldValue: true
             });
 
-            var observer2 = new MutationObserver(function(items, observer) {
+            var observer2 = new MutationObserver(function(items) {
                 equal(items.length, 2, "noticed correct number of attribute changes");
 
                 ok( items.some(function(item) {return item.attributeName === "id"; }), "Attribute filter is called with attribute names and old value when appropriate");
                 ok( !items.some(function(item) {return item.attributeName === "data-test";}), "Filtered attributes are do not produce a mutation");
+
+                //fails on ie7 because ie7 has messed up attributes for style
+                ok( items.some(function(item) {return item.attributeName === "style";} ), "Registers style: fails on ie7 because ie7 has messed up attributes for style");
             
 
                 ok( !items.some(function(item) {return item.target !== teste;}), "Should not observe attributes on subtree unless subtree is specified, i.e. setting childList does not make subtree be observed");
@@ -44,8 +47,8 @@ define(["utils"], function(utils) {
 
             //spec but throws on chrome 28
             /*try {
-                var observer3 = new MutationObserver(function(items, observer) {
-                    equal(observer, observer3, "Watches attributes if attributeFilter defined and attributes omitted");
+                var observer3 = new MutationObserver(function(items) {
+                    equal(observer3, "Watches attributes if attributeFilter defined and attributes omitted");
                 });
                 observer3.observe(teste, {
                     attributeFilter: ["id", "style"]
@@ -64,7 +67,7 @@ define(["utils"], function(utils) {
             var $test2 = $("<div><span class='name'>3</span><span class='name'>2</span><span class='name'>1</span></div>");
             var teste2 = $test2.get(0);
             var $tar = utils.$randomChild($test2);
-            var observer3 = new MutationObserver(function(items, observer) {
+            var observer3 = new MutationObserver(function(items) {
                 equal(items.length, 1, "Can observe attributes of subtree");
                 equal(items[0].target, $tar.get(0), "Called with the correct target on the subtree");
                 equal(items[0].attributeName, "class", "Called with the correct attribute name in the subtree");
