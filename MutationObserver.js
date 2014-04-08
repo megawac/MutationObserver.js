@@ -47,7 +47,8 @@ window.MutationObserver = (function(window, undefined) {
          * @return {!Object} : Cloned data structure
          */
         var clone = function($target, config) {
-            return (function copy($target, top) {
+            var top = true;
+            return (function copy($target) {
                 var isText = $target.nodeType === 3;
                 var elestruct = {
                     /** @type {Node} */
@@ -72,27 +73,12 @@ window.MutationObserver = (function(window, undefined) {
                 }
 
                 if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
+                    top = false;
                     /** @type {Array.<!Object>} : Array of custom clone */
-                    elestruct.kids = map($target.childNodes, function(node) {
-                        return copy(node, false);
-                    });
+                    elestruct.kids = map($target.childNodes, copy);
                 }
                 return elestruct;
-            })($target, true);
-        };
-
-        /**
-         * indexOf an element in a collection of custom nodes
-         *
-         * @param {Node} set
-         * @param {!Object} $node : A custom cloned node
-         * @param {number} idx : index to start the loop
-         * @return {number}
-         */
-        var indexOfCustomNode = function(set, $node, idx) {
-            return indexOf(map(set, function(item) {
-                return item.node;
-            }), $node, idx);
+            })($target);
         };
 
         /* attributes + attributeFilter helpers */
@@ -141,6 +127,18 @@ window.MutationObserver = (function(window, undefined) {
             }
         };
 
+        /**
+         * indexOf an element in a collection of custom nodes
+         *
+         * @param {Node} set
+         * @param {!Object} $node : A custom cloned node
+         * @param {number} idx : index to start the loop
+         * @return {number}
+         */
+        var indexOfCustomNode = function(set, $node, idx) {
+            return indexOf(set, $node, idx, "node");
+        };
+
         /*subtree and childlist helpers*/
 
         //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
@@ -185,7 +183,9 @@ window.MutationObserver = (function(window, undefined) {
              */
             function resolveConflicts(conflicts, node, $kids, $oldkids) {
                 var size = conflicts.length - 1;
-                var counter = -~(size / 2); //prevents same conflict being resolved twice consider when two nodes switch places. only one should be given a mutation event (note -~ is math.ceil shorthand)
+                // prevents same conflict being resolved twice consider when two nodes switch places.
+                // only one should be given a mutation event (note -~ is used as a math.ceil shorthand)
+                var counter = -~(size / 2);
                 var $cur;
                 var oldstruct;
                 var conflict;
@@ -440,7 +440,7 @@ window.MutationObserver = (function(window, undefined) {
                  * converts to a {key: true} dict for faster lookup
                  * @type {Object.<String,Boolean>}
                  */
-                settings.afilter = config.attributeFilter.reduce(function(a, b) {
+                settings.afilter = reduce(config.attributeFilter, function(a, b) {
                     a[b] = true;
                     return a;
                 }, {});
@@ -507,10 +507,16 @@ window.MutationObserver = (function(window, undefined) {
         return memo;
     }
 
-    // **indexOf** an element in a collection of custom nodes
-    function indexOf(set, item, idx) {
+    /**
+     * **indexOf** find index of item in collection.
+     * @param {Array} set
+     * @param {Object} item
+     * @param {number} idx
+     * @param {string} [prop] Property on set item to compare to item
+     */
+    function indexOf(set, item, idx, prop) {
         for (/*idx = ~~idx*/; idx < set.length; idx++) {//start idx is always given as this is internal
-            if (set[idx] === item) return idx;
+            if ((prop ? set[idx][prop] : set[idx]) === item) return idx;
         }
         return -1;
     }
