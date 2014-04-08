@@ -2,7 +2,7 @@
   "name": "MutationObserver-Shim",
   "short name": "mutationobserver",
   "description": "MutationObserver shim",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "keywords": [
     "mutation observer MutationObserver"
   ],
