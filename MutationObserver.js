@@ -32,7 +32,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
             oldValue: null
         };
         for (var prop in data) {
-            if (has(settings, prop)) settings[prop] = data[prop];
+            if (has(settings, prop) && data[prop] !== undefined) settings[prop] = data[prop];
         }
         return settings;
     }
@@ -109,7 +109,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
                         target: $target,
                         attributeName: name,
                         oldValue: $oldstate[name],
-                        attributeNamespace: attr.namespaceURI //in ie<8 it incorrectly will return undefined... is it worth handling it and making it null?
+                        attributeNamespace: attr.namespaceURI //in ie<8 it incorrectly will return undefined
                     }));
                 }
                 checked[name] = true;
