@@ -12,8 +12,129 @@
     -https://bugs.webkit.org/show_bug.cgi?id=85161
     -https://bugzilla.mozilla.org/show_bug.cgi?id=749920
 */
-window.MutationObserver = window.MutationObserver || window.WebKitMutationObserver || (function(undefined) {
+this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || (function(undefined) {
     "use strict";
+    /**
+     * @param {function(Array.<MutationRecord>, MutationObserver)} listener
+     * @constructor
+     */
+    function MutationObserver(listener) {
+        var self = this;
+        /**
+         * @type {Array.<function(Array.<MutationRecord>)>}
+         * @private
+         */
+        self._watched = [];
+        /** 
+         * Recursive timeout function to check all observed items for mutations
+         * @private
+         */
+        self._checker = function() {
+            var mutations = self.takeRecords();
+
+            if (mutations.length) { //fire away
+                listener.call(self, mutations, self); //call is not spec but consistent with other implementations
+            }
+            /** @private */
+            self._timeout = setTimeout(self._checker, MutationObserver._period);
+        };
+    }
+
+    /** 
+     * Period to check for mutations (~32 times/sec)
+     * @type {number}
+     * @expose
+     */
+    MutationObserver._period = 30 /*ms+runtime*/ ;
+
+    /** 
+     * Exposed API
+     * @expose
+     * @final
+     */
+    MutationObserver.prototype = {
+        /**
+         * see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
+         * not going to throw here but going to follow the current spec config sets
+         * @param {Node} $target
+         * @param {Object} config : MutationObserverInit configuration dictionary
+         * @expose
+         * @final
+         * @return undefined
+         */
+        observe: function($target, config) {
+            /** 
+             * Using slightly different names so closure can go ham
+             * @type {!Object} : A custom mutation config
+             */
+            var settings = {
+                attr: !! (config.attributes || config.attributeFilter || config.attributeOldValue),
+
+                //some browsers are strict in their implementation that config.subtree and childList must be set together. We don't care - spec doesn't specify
+                kids: !! config.childList,
+                descendents: !! config.subtree,
+                charData: !! (config.characterData || config.characterDataOldValue)
+            };
+
+            var watched = this._watched;
+
+            //remove already observed target element from pool
+            for (var i = 0; i < watched.length; i++) {
+                if (watched[i].tar === $target) {
+                    watched.splice(i, 1);
+                    break;
+                }
+            }
+
+            if (config.attributeFilter) {
+                /**
+                 * converts to a {key: true} dict for faster lookup
+                 * @type {Object.<String,Boolean>}
+                 */
+                settings.afilter = reduce(config.attributeFilter, function(a, b) {
+                    a[b] = true;
+                    return a;
+                }, {});
+            }
+
+            watched.push({
+                tar: $target,
+                fn: createMutationSearcher($target, settings)
+            });
+
+            //reconnect if not connected
+            if (!this._timeout) {
+                this._checker();
+            }
+        },
+
+        /**
+         * Finds mutations since last check and empties the "record queue" i.e. mutations will only be found once
+         * @expose
+         * @return {Array.<MutationRecord>}
+         */
+        takeRecords: function() {
+            var mutations = [];
+            var watched = this._watched;
+
+            for (var i = 0; i < watched.length; i++) {
+                watched[i].fn(mutations);
+            }
+
+            return mutations;
+        },
+
+        /**
+         * @expose
+         * @return undefined
+         */
+        disconnect: function() {
+            this._watched.length = 0; //clear the stuff being observed
+            clearTimeout(this._timeout); //ready for garbage collection
+            /** @private */
+            this._timeout = null;
+        }
+    };
 
     /**
      * Simple MutationRecord pseudoclass. No longer exposing as its not fully compliant
@@ -46,7 +167,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
      * @param {!Object} config : A custom mutation config
      * @return {!Object} : Cloned data structure
      */
-    var clone = function($target, config) {
+    function clone($target, config) {
         var top = true;
         return (function copy($target) {
             var isText = $target.nodeType === 3;
@@ -79,7 +200,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
             }
             return elestruct;
         })($target);
-    };
+    }
 
     /* attributes + attributeFilter helpers */
 
@@ -92,7 +213,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
      * @param {Object.<string, string>} $oldstate : Custom attribute clone data structure from clone
      * @param {Object} filter
      */
-    var findAttributeMutations = function(mutations, $target, $oldstate, filter) {
+    function findAttributeMutations(mutations, $target, $oldstate, filter) {
         var checked = {};
         var attributes = $target.attributes;
         var attr;
@@ -125,7 +246,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
                 }));
             }
         }
-    };
+    }
 
     /*subtree and childlist helpers*/
 
@@ -137,9 +258,9 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
      * @param {number} idx : index to start the loop
      * @return {number}
      */
-    var indexOfCustomNode = function(set, $node, idx) {
+    function indexOfCustomNode(set, $node, idx) {
         return indexOf(set, $node, idx, "node");
-    };
+    }
 
     //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
     var counter = 1; //don't use 0 as id (falsy)
@@ -151,7 +272,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
      * @param {Node} $ele
      * @return {(string|number)}
      */
-    var getElementId = function($ele) {
+    function getElementId($ele) {
         try {
             return $ele.id || ($ele[expando] = $ele[expando] || counter++);
         } catch (o_O) { //ie <8 will throw if you set an unknown property on a text node
@@ -161,7 +282,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
                 return counter++;
             }
         }
-    };
+    }
 
     /**
      * searchSubtree: array of mutations so far, element, element clone, bool
@@ -175,7 +296,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
      * @param {!Object} $oldstate : A custom cloned node from clone()
      * @param {!Object} config : A custom mutation config
      */
-    var searchSubtree = function(mutations, $target, $oldstate, config) {
+    function searchSubtree(mutations, $target, $oldstate, config) {
         /*
          * Helper to identify node rearrangment and stuff... 
          * There is no gaurentee that the same node will be identified for both added and removed nodes
@@ -331,7 +452,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
             if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids);
         }
         findMut($target, $oldstate);
-    };
+    }
 
     /**
      * Creates a func to find all the mutations
@@ -339,7 +460,7 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
      * @param {Node} $target
      * @param {!Object} config : A custom mutation config
      */
-    var createMutationSearcher = function($target, config) {
+    function createMutationSearcher($target, config) {
         /** type {Elestuct} */
         var $oldstate = clone($target, config); //create the cloned datastructure
 
@@ -368,128 +489,18 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
                 $oldstate = clone($target, config);
             }
         };
-    };
-
-    /**
-     * @param {function(Array.<MutationRecord>, MutationObserver)} listener
-     * @constructor
-     */
-    function MutationObserver(listener) {
-        var self = this;
-        /**
-         * @type {Array.<function(Array.<MutationRecord>)>}
-         * @private
-         */
-        self._watched = [];
-        /** 
-         * Recursive timeout function to check all observed items for mutations
-         * @private
-         */
-        self._checker = function() {
-            var mutations = self.takeRecords();
-
-            if (mutations.length) { //fire away
-                listener.call(self, mutations, self); //call is not spec but consistent with other implementations
-            }
-            /** @private */
-            self._timeout = setTimeout(self._checker, MutationObserver._period);
-        };
     }
-
-    /** 
-     * Period to check for mutations (~32 times/sec)
-     * @type {number}
-     * @expose
-     */
-    MutationObserver._period = 30 /*ms+runtime*/ ;
-
-    /**
-     * see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
-     * not going to throw here but going to follow the current spec config sets
-     * @param {Node} $target
-     * @param {Object} config : MutationObserverInit configuration dictionary
-     * @expose
-     * @return undefined
-     */
-    MutationObserver.prototype.observe = function($target, config) {
-        /** 
-         * Using slightly different names so closure can go ham
-         * @type {!Object} : A custom mutation config
-         */
-        var settings = {
-            attr: !! (config.attributes || config.attributeFilter || config.attributeOldValue),
-
-            //some browsers are strict in their implementation that config.subtree and childList must be set together. We don't care - spec doesn't specify
-            kids: !! config.childList,
-            descendents: !! config.subtree,
-            charData: !! (config.characterData || config.characterDataOldValue)
-        };
-
-        var watched = this._watched;
-
-        //remove already observed target element from pool
-        for (var i = 0; i < watched.length; i++) {
-            if (watched[i].tar === $target) {
-                watched.splice(i, 1);
-                break;
-            }
-        }
-
-        if (config.attributeFilter) {
-            /**
-             * converts to a {key: true} dict for faster lookup
-             * @type {Object.<String,Boolean>}
-             */
-            settings.afilter = reduce(config.attributeFilter, function(a, b) {
-                a[b] = true;
-                return a;
-            }, {});
-        }
-
-        watched.push({
-            tar: $target,
-            fn: createMutationSearcher($target, settings)
-        });
-
-        //reconnect if not connected
-        if (!this._timeout) {
-            this._checker();
-        }
-    };
-
-    /**
-     * Finds mutations since last check and empties the "record queue" i.e. mutations will only be found once
-     * @expose
-     * @return {Array.<MutationRecord>}
-     */
-    MutationObserver.prototype.takeRecords = function() {
-        var mutations = [];
-        var watched = this._watched;
-
-        for (var i = 0; i < watched.length; i++) {
-            watched[i].fn(mutations);
-        }
-
-        return mutations;
-    };
-
-    /**
-     * @expose
-     * @return undefined
-     */
-    MutationObserver.prototype.disconnect = function() {
-        this._watched.length = 0; //clear the stuff being observed
-        clearTimeout(this._timeout); //ready for garbage collection
-        /** @private */
-        this._timeout = null;
-    };
 
     /**
      * Random generic helper functions
      * simple tailored shims of based off of underscorejs (https://github.com/jashkenas/underscore) implementations
      */
 
-    // **map** Apply a mapping function to each item of a set
+    /**
+     * **map** Apply a mapping function to each item of a set
+     * @param {Array|NodeList} set
+     * @param {Function} iterator
+     */
     function map(set, iterator) {
         var results = [];
         for (var index = 0, l = set.length; index < l; index++) {
@@ -498,7 +509,12 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
         return results;
     }
 
-    // **Reduce** builds up a single result from a list of values
+    /**
+     * **Reduce** builds up a single result from a list of values
+     * @param {Array|NodeList} set
+     * @param {Function} iterator
+     * @param {*} [memo] Initial value of the memo.
+     */
     function reduce(set, iterator, memo) {
         for (var index = 0, l = set.length; index < l; index++) {
             memo = iterator(memo, set[index], index, set);
