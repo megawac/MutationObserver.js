@@ -10,5 +10,7 @@
     //syntax
     "es3": true,
     "undef": true,
-    "unused": true
+    "unused": true,
+
+    "gcl": true
 }

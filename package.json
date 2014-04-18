@@ -9,13 +9,13 @@
   "authors": [
     {
       "name": "Graeme Yeates",
-      "email": "yeatesgraeme@gmail.com"
+      "email": "github.com/megawac"
     }
   ],
   "repository": {
     "type": "git",
     "git": "git@github.com:megawac/MutationObserver.js.git",
-    "url": "http://github.com/megawac/MutationObserver.js"
+    "url": "github.com/megawac/MutationObserver.js"
   },
   "main": "MutationObserver.js",
   "devDependencies": {
@@ -24,7 +24,7 @@
     "grunt-saucelabs": "4.1.x",
     "grunt-contrib-jshint": ">= 0.8",
     "grunt-contrib-qunit": "0.3.x",
-    "grunt-contrib-connect": "0.6.x",
+    "grunt-contrib-connect": "0.7",
     "grunt-gcc": "0.3.x",
     "grunt-file-info": "~1.0.4",
     "grunt-bumpup": "~0.5.0",
