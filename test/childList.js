@@ -1,6 +1,6 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("childList", 11, function() {
+        QUnit.asyncTest("childList", 17, function() {
             var deferred = utils.asyncAutocomplete();
 
             var $test = $("<div>", {
@@ -127,6 +127,66 @@ define(["utils"], function(utils) {
             ok(changed.removed === 1 && changed.added === 2, "works with mixing setting html and text");
             $text = $test.get(0).childNodes[1];
             $text.nodeValue = "test";
+
+            //test 10 from polymer/mutationobservers
+            var div = document.createElement("div");
+            observer.observe(div, {
+              childList: true
+            }, "Correct length");
+            var a = document.createElement("a");
+            var b = document.createElement("b");
+            div.appendChild(a);
+            div.appendChild(b);
+
+            var records = observer.takeRecords();
+            equal(records.length, 2);
+
+            utils.expectRecord(records[0], {
+              type: "childList",
+              target: div,
+              addedNodes: [a]
+            }, "Expect next sibling");
+
+            utils.expectRecord(records[1], {
+              type: "childList",
+              target: div,
+              addedNodes: [b],
+              previousSibling: a
+            }, "Expect previous sibling");
+            observer.disconnect();
+
+
+            //tricky insertbefore case
+            div = document.createElement("div");
+            a = document.createElement("a");
+            b = document.createElement("b");
+            var c = document.createElement("i");
+            div.appendChild(a);
+
+            observer.observe(div, {
+                childList: true
+            });
+
+            div.insertBefore(b, a);
+            div.insertBefore(c, a);
+
+            records = observer.takeRecords();
+            equal(records.length, 2);
+
+            utils.expectRecord(records[0], {
+                type: "childList",
+                target: div,
+                addedNodes: [b]
+                // nextSibling: a - impossible for script to tell it will be c when the scripts ready to check
+            }, "Expect a next sibling");
+
+            utils.expectRecord(records[1], {
+                type: "childList",
+                target: div,
+                addedNodes: [c],
+                nextSibling: a,
+                previousSibling: b
+            }, "Expect a previous and next sib");
 
 
             deferred.done(function() {

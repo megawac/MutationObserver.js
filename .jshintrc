@@ -11,6 +11,7 @@
     "es3": true,
     "undef": true,
     "unused": true,
+    "sub": true,
 
     "gcl": true
 }

@@ -18,6 +18,7 @@ A polyfill for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131
 
 * `addedNodes` and `removedNodes` are arrays instead of `NodeList`s
 * `oldValue` is always called with attribute changes
+* `nextSibling` and `previousSibling` correctfullness is questionable (hard to know if the order of appended items). I'd suggest not relying on them anyway (my tests are extremely permissive with these attributes)
 
 ### Supported MutationObserverInit properties
 
@@ -25,7 +26,7 @@ Currently supports the following [MutationObserverInit properties](https://devel
 
 * **childList**: Set to truthy if mutations to target's immediate children are to be observed.
 * **subtree**: Set to truthy to do deep scans on a target's children.
-* **attributes**: Set to truthy if mutations to target's children are to be observed.
+* **attributes**: Set to truthy if mutations to target's children are to be observed. As explained in #4, the `style` attribute may not be matched in ie<8.
 * **attributeFilter**: Set to an array of attribute local names (without namespace) if not all attribute mutations need to be observed.
 * **attributeOldValue**: doesn't do anything attributes are always called with old value
 * **characterData**: currently follows Mozilla's implementation in that it will only watch `textNodes` values and not, like in webkit, where setting .innerHTML will add a characterData mutation.

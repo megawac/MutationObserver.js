@@ -48,6 +48,12 @@ define([], function() {
         return obj;
     };
 
+    var toArray = function(set) {
+        return Array.prototype.map(set, function(x) {
+            return x;
+        });
+    };
+
     var utils = {
         each: each,
         any: function(col, fn) {
@@ -83,6 +89,14 @@ define([], function() {
             return $a.map(function(node) {
                 return $(node).get(0);
             });
+        },
+
+        after: function(times, func) {
+            return function() {
+                if (--times < 1) {
+                    return func.apply(this, arguments);
+                }
+            };
         },
 
         sameNode: function(node1, node2) { //from ./MutationObserver.js
@@ -154,7 +168,39 @@ define([], function() {
                 deferred.resolve();
             }, delay || 250);
             return deferred;
-        }
+        },
+
+        expectRecord: (function() {
+
+            function MutationRecord(data) {
+                /** @typedef {MutationRecord} */
+                var settings = {//technically these should be on proto so hasOwnProperty will return false for non explicitly props
+                    type: null,
+                    target: null,
+                    previousSibling: null,
+                    nextSibling: null,
+                    attributeName: null,
+                    attributeNamespace: null,
+                    oldValue: null
+                };
+                for (var prop in data) {
+                    if (prop in settings) settings[prop] = data[prop];
+                }
+                settings.addedNodes = settings.addedNodes ? toArray(settings.addedNodes) : [];
+                settings.removedNodes = settings.removedNodes ? toArray(settings.removedNodes) : [];
+                return settings;
+            }
+
+            return function expectRecord(record, expected, msg) {
+                expected = MutationRecord(expected);
+                //old webkit and moz didnt have next/prev siblings
+                record = MutationRecord(record);
+                //because knowing if the previous/nextsiblign is impossible in the polyfill
+                if (record.previousSibling && !expected.previousSibling) expected.previousSibling = record.previousSibling;
+                if (record.nextSibling && !expected.nextSibling) expected.nextSibling = record.nextSibling;
+                deepEqual(record, expected, msg);
+            };
+        })()
 
 
     };

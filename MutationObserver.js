@@ -59,7 +59,6 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
          * @param {Node} $target
          * @param {Object} config : MutationObserverInit configuration dictionary
          * @expose
-         * @final
          * @return undefined
          */
         observe: function($target, config) {
@@ -80,10 +79,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
 
             //remove already observed target element from pool
             for (var i = 0; i < watched.length; i++) {
-                if (watched[i].tar === $target) {
-                    watched.splice(i, 1);
-                    break;
-                }
+                if (watched[i].tar === $target) watched.splice(i, 1);
             }
 
             if (config.attributeFilter) {
@@ -143,11 +139,13 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      */
     function MutationRecord(data) {
         /** @typedef {MutationRecord} */
-        var settings = {//technically these should be on proto so hasOwnProperty will return false for non explicitly props
+        var settings = { //technically these should be on proto so hasOwnProperty will return false for non explicitly props
             type: null,
             target: null,
             addedNodes: [],
             removedNodes: [],
+            previousSibling: null,
+            nextSibling: null,
             attributeName: null,
             attributeNamespace: null,
             oldValue: null
@@ -158,48 +156,41 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
         return settings;
     }
 
-
     /**
-     * Utility
-     * Cones a element into a custom data structure designed for comparision. https://gist.github.com/megawac/8201012
-     * 
+     * Creates a func to find all the mutations
+     *
      * @param {Node} $target
      * @param {!Object} config : A custom mutation config
-     * @return {!Object} : Cloned data structure
      */
-    function clone($target, config) {
-        var top = true;
-        return (function copy($target) {
-            var isText = $target.nodeType === 3;
-            var elestruct = {
-                /** @type {Node} */
-                node: $target
-            };
+    function createMutationSearcher($target, config) {
+        /** type {Elestuct} */
+        var $oldstate = clone($target, config); //create the cloned datastructure
 
-            if(config.attr && !isText && (top || config.descendents)) {
-                /**
-                 * clone live attribute list to an object structure {name: val}
-                 * @type {Object.<string, string>}
-                 */
-                elestruct.attr = reduce($target.attributes, function(memo, attr) {
-                    if (!config.afilter || config.afilter[attr.name]) {
-                        memo[attr.name] = attr.value;
-                    }
-                    return memo;
-                }, {});
+        /**
+         * consumes array of mutations we can push to
+         *
+         * @param {Array.<MutationRecord>} mutations
+         */
+        return function(mutations) {
+            var olen = mutations.length;
+
+            //Alright we check base level changes in attributes... easy
+            if (config.attr && $oldstate.attr) {
+                findAttributeMutations(mutations, $target, $oldstate.attr, config.afilter);
             }
 
-            if(config.charData && isText) {
-                elestruct.charData = $target.nodeValue;
+            //check childlist or subtree for mutations
+            if (config.kids || config.descendents) {
+                searchSubtree(mutations, $target, $oldstate, config);
             }
 
-            if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
-                top = false;
-                /** @type {Array.<!Object>} : Array of custom clone */
-                elestruct.kids = map($target.childNodes, copy);
+
+            //reclone data structure if theres changes
+            if (mutations.length !== olen) {
+                /** type {Elestuct} */
+                $oldstate = clone($target, config);
             }
-            return elestruct;
-        })($target);
+        };
     }
 
     /* attributes + attributeFilter helpers */
@@ -248,42 +239,6 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
         }
     }
 
-    /*subtree and childlist helpers*/
-
-    /**
-     * indexOf an element in a collection of custom nodes
-     *
-     * @param {Node} set
-     * @param {!Object} $node : A custom cloned node
-     * @param {number} idx : index to start the loop
-     * @return {number}
-     */
-    function indexOfCustomNode(set, $node, idx) {
-        return indexOf(set, $node, idx, "node");
-    }
-
-    //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
-    var counter = 1; //don't use 0 as id (falsy)
-    //id property
-    var expando = "mo_id";
-    /**
-     * Attempt to uniquely id an element for hashing. We could optimize this for legacy browsers but it hopefully wont be called enough to be a concern
-     *
-     * @param {Node} $ele
-     * @return {(string|number)}
-     */
-    function getElementId($ele) {
-        try {
-            return $ele.id || ($ele[expando] = $ele[expando] || counter++);
-        } catch (o_O) { //ie <8 will throw if you set an unknown property on a text node
-            try {
-                return $ele.nodeValue; //naive
-            } catch (shitie) { //when text node is removed: https://gist.github.com/megawac/8355978 :(
-                return counter++;
-            }
-        }
-    }
-
     /**
      * searchSubtree: array of mutations so far, element, element clone, bool
      * synchronous dfs comparision of two nodes
@@ -301,12 +256,14 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
          * Helper to identify node rearrangment and stuff... 
          * There is no gaurentee that the same node will be identified for both added and removed nodes
          * if the positions have been shuffled.
+         * conflicts array will be emptied by end of operation
          */
         function resolveConflicts(conflicts, node, $kids, $oldkids) {
-            var size = conflicts.length - 1;
+            // the distance between the first conflicting node and the last
+            var distance = conflicts.length - 1;
             // prevents same conflict being resolved twice consider when two nodes switch places.
             // only one should be given a mutation event (note -~ is used as a math.ceil shorthand)
-            var counter = -~(size / 2);
+            var counter = -~(distance / 2);
             var $cur;
             var oldstruct;
             var conflict;
@@ -316,12 +273,14 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
 
                 //attempt to determine if there was node rearrangement... won't gaurentee all matches
                 //also handles case where added/removed nodes cause nodes to be identified as conflicts
-                if (config.kids && counter && Math.abs(conflict.i - conflict.j) >= size) {
+                if (config.kids && counter && Math.abs(conflict.i - conflict.j) >= distance) {
                     mutations.push(MutationRecord({
                         type: "childList",
                         target: node,
                         addedNodes: [$cur],
-                        removedNodes: [$cur]
+                        removedNodes: [$cur],
+                        nextSibling: $cur.nextSibling,
+                        previousSibling: $cur.previousSibling
                     }));
                     counter--; //found conflict
                 }
@@ -372,7 +331,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                 //current and old nodes at the indexs
                 $cur = $kids[i];
                 oldstruct = $oldkids[j];
-                $old = oldstruct && oldstruct.node;
+                $old = oldstruct && oldstruct["node"];
 
                 if ($cur === $old) { //expected case - optimized for this case
                     //check attributes as specified by config
@@ -390,25 +349,27 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids);
 
                     //recurse on next level of children. Avoids the recursive call when $cur.firstChild is null and kids.length is 0
-                    if (config.descendents && ($cur.firstChild || oldstruct.kids.length)) findMut($cur, oldstruct);
+                    if (config.descendents && ($cur.childNodes.length || oldstruct.kids.length)) findMut($cur, oldstruct);
 
                     i++;
                     j++;
                 } else { //(uncommon case) lookahead until they are the same again or the end of children
-                    if(!map) {//delayed initalization
+                    if(!map) { //delayed initalization (big perf benefit)
                         map = {};
                         conflicts = [];
                     }
                     if ($cur) {
                         //check id is in the location map otherwise do a indexOf search
-                        if (!has(map, (id = getElementId($cur)))) { //to prevent double checking
+                        if (!(map[id = getElementId($cur)])) { //to prevent double checking
                             //custom indexOf using comparitor checking oldkids[i].node === $cur
                             if ((idx = indexOfCustomNode($oldkids, $cur, j)) === -1) {
-                                if(config.kids) {
+                                if (config.kids) {
                                     mutations.push(MutationRecord({
                                         type: "childList",
                                         target: node,
-                                        addedNodes: [$cur]//$cur is a new node
+                                        addedNodes: [$cur], //$cur is a new node
+                                        nextSibling: $cur.nextSibling,
+                                        previousSibling: $cur.previousSibling
                                     }));
                                 }
                             } else {
@@ -426,13 +387,15 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                        //special case: the changes may have been resolved: i and j appear congurent so we can continue using the expected case
                        $old !== $kids[i]
                     ) {
-                        if (!has(map, (id = getElementId($old)))) {
+                        if (!(map[id = getElementId($old)])) {
                             if ((idx = indexOf($kids, $old, i)) === -1) {
                                 if(config.kids) {
                                     mutations.push(MutationRecord({
                                         type: "childList",
-                                        target: old.node,
-                                        removedNodes: [$old]
+                                        target: old["node"],
+                                        removedNodes: [$old],
+                                        nextSibling: $oldkids[j + 1], //praise no indexoutofbounds exception
+                                        previousSibling: $oldkids[j - 1]
                                     }));
                                 }
                             } else {
@@ -455,46 +418,79 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
     }
 
     /**
-     * Creates a func to find all the mutations
-     *
+     * Utility
+     * Cones a element into a custom data structure designed for comparision. https://gist.github.com/megawac/8201012
+     * 
      * @param {Node} $target
      * @param {!Object} config : A custom mutation config
+     * @return {!Object} : Cloned data structure
      */
-    function createMutationSearcher($target, config) {
-        /** type {Elestuct} */
-        var $oldstate = clone($target, config); //create the cloned datastructure
+    function clone($target, config) {
+        var top = true;
+        return (function copy($target) {
+            var isText = $target.nodeType === 3;
+            var elestruct = {
+                /** @type {Node} */
+                "node": $target
+            };
 
-        /**
-         * consumes array of mutations we can push to
-         *
-         * @param {Array.<MutationRecord>} mutations
-         */
-        return function(mutations) {
-            var olen = mutations.length;
-
-            //Alright we check base level changes in attributes... easy
-            if (config.attr && $oldstate.attr) {
-                findAttributeMutations(mutations, $target, $oldstate.attr, config.afilter);
+            if(config.attr && !isText && (top || config.descendents)) {
+                /**
+                 * clone live attribute list to an object structure {name: val}
+                 * @type {Object.<string, string>}
+                 */
+                elestruct.attr = reduce($target.attributes, function(memo, attr) {
+                    if (!config.afilter || config.afilter[attr.name]) {
+                        memo[attr.name] = attr.value;
+                    }
+                    return memo;
+                }, {});
             }
 
-            //check childlist or subtree for mutations
-            if (config.kids || config.descendents) {
-                searchSubtree(mutations, $target, $oldstate, config);
+            if(config.charData && isText) {
+                elestruct.charData = $target.nodeValue;
             }
 
-
-            //reclone data structure if theres changes
-            if (mutations.length !== olen) {
-                /** type {Elestuct} */
-                $oldstate = clone($target, config);
+            if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
+                top = false;
+                /** @type {Array.<!Object>} : Array of custom clone */
+                elestruct.kids = map($target.childNodes, copy);
             }
-        };
+            return elestruct;
+        })($target);
     }
 
     /**
-     * Random generic helper functions
-     * simple tailored shims of based off of underscorejs (https://github.com/jashkenas/underscore) implementations
+     * indexOf an element in a collection of custom nodes
+     *
+     * @param {Node} set
+     * @param {!Object} $node : A custom cloned node
+     * @param {number} idx : index to start the loop
+     * @return {number}
      */
+    function indexOfCustomNode(set, $node, idx) {
+        return indexOf(set, $node, idx, "node");
+    }
+
+    //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
+    var counter = 1; //don't use 0 as id (falsy)
+    /**
+     * Attempt to uniquely id an element for hashing. We could optimize this for legacy browsers but it hopefully wont be called enough to be a concern
+     *
+     * @param {Node} $ele
+     * @return {(string|number)}
+     */
+    function getElementId($ele) {
+        try {
+            return $ele.id || ($ele["mo_id"] = $ele["mo_id"] || counter++);
+        } catch (o_O) { //ie <8 will throw if you set an unknown property on a text node
+            try {
+                return $ele.nodeValue; //naive
+            } catch (shitie) { //when text node is removed: https://gist.github.com/megawac/8355978 :(
+                return counter++;
+            }
+        }
+    }
 
     /**
      * **map** Apply a mapping function to each item of a set
@@ -503,7 +499,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      */
     function map(set, iterator) {
         var results = [];
-        for (var index = 0, l = set.length; index < l; index++) {
+        for (var index = 0; index < set.length; index++) {
             results[index] = iterator(set[index], index, set);
         }
         return results;
@@ -516,7 +512,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      * @param {*} [memo] Initial value of the memo.
      */
     function reduce(set, iterator, memo) {
-        for (var index = 0, l = set.length; index < l; index++) {
+        for (var index = 0; index < set.length; index++) {
             memo = iterator(memo, set[index], index, set);
         }
         return memo;

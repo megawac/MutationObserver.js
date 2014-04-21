@@ -13,6 +13,7 @@
         "test": true,
         "equal": true,
         "deepEqual": true,
+        "strictEqual": true,
 
         "define": true,
         "yepnope": true,
