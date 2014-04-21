@@ -258,12 +258,12 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
          * if the positions have been shuffled.
          * conflicts array will be emptied by end of operation
          */
-        function resolveConflicts(conflicts, node, $kids, $oldkids) {
+        function resolveConflicts(conflicts, node, $kids, $oldkids, numAddedNodes) {
             // the distance between the first conflicting node and the last
             var distance = conflicts.length - 1;
             // prevents same conflict being resolved twice consider when two nodes switch places.
             // only one should be given a mutation event (note -~ is used as a math.ceil shorthand)
-            var counter = -~(distance / 2);
+            var counter = -~((distance - numAddedNodes) / 2);
             var $cur;
             var oldstruct;
             var conflict;
@@ -323,6 +323,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             //current and old nodes
             var $cur;
             var $old;
+            var numAddedNodes = 0;
             
             //iterate over both old and current child nodes at the same time
             var i = 0, j = 0;
@@ -346,7 +347,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     }
 
                     //resolve conflicts
-                    if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids);
+                    if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids, numAddedNodes);
 
                     //recurse on next level of children. Avoids the recursive call when $cur.firstChild is null and kids.length is 0
                     if (config.descendents && ($cur.childNodes.length || oldstruct.kids.length)) findMut($cur, oldstruct);
@@ -371,6 +372,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                                         nextSibling: $cur.nextSibling,
                                         previousSibling: $cur.previousSibling
                                     }));
+                                    numAddedNodes++;
                                 }
                             } else {
                                 map[id] = true; //mark id as found
@@ -397,6 +399,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                                         nextSibling: $oldkids[j + 1], //praise no indexoutofbounds exception
                                         previousSibling: $oldkids[j - 1]
                                     }));
+                                    numAddedNodes--;
                                 }
                             } else {
                                 map[id] = true;
@@ -412,7 +415,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             }//end loop
 
             //resolve any remaining conflicts
-            if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids);
+            if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids, numAddedNodes);
         }
         findMut($target, $oldstate);
     }
