@@ -17,13 +17,15 @@ module.exports = function(grunt) {
         },
 
         qunit: {
-            all: {
+            option: {timeout: 10000},
+            main: {
                 options: {
-                    timeout: 10000,
-                    urls: [
-                        "http://localhost:8000/test/index.html",
-                        "http://localhost:8000/test/index.html?min=true"
-                    ]
+                    urls: ["http://localhost:8000/test/index.html"]
+                }
+            },
+            min: {
+                options: {
+                    urls: ["http://localhost:8000/test/index.html?min=true"]
                 }
             }
         },
@@ -139,12 +141,12 @@ module.exports = function(grunt) {
 
     require("matchdep").filterDev("grunt-*").forEach(grunt.loadNpmTasks);
 
-    var testJobs = ["jshint", "connect", "qunit"];
+    var testJobs = ["jshint", "connect", "qunit:main"];
     if (typeof process.env.SAUCE_ACCESS_KEY !== "undefined") {
         testJobs.push("saucelabs-qunit");
     }
     grunt.registerTask("test", testJobs);
-    grunt.registerTask("build", ["test", "closurecompiler", "file_info"]);
+    grunt.registerTask("build", ["test", "closurecompiler", "qunit:min", "file_info"]);
 
     // Release alias task
     grunt.registerTask("release", function (type) {
