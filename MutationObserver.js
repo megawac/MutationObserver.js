@@ -477,6 +477,9 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
 
     //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
     var counter = 1; //don't use 0 as id (falsy)
+    /** @const */
+    var expando = "mo_id";
+
     /**
      * Attempt to uniquely id an element for hashing. We could optimize this for legacy browsers but it hopefully wont be called enough to be a concern
      *
@@ -485,7 +488,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      */
     function getElementId($ele) {
         try {
-            return $ele.id || ($ele["mo_id"] = $ele["mo_id"] || counter++);
+            return $ele.id || ($ele[expando] = $ele[expando] || counter++);
         } catch (o_O) { //ie <8 will throw if you set an unknown property on a text node
             try {
                 return $ele.nodeValue; //naive

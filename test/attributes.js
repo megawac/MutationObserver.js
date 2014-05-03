@@ -1,6 +1,6 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("attributes and attributeFilter", 13, function() {
+        QUnit.asyncTest("attributes and attributeFilter", 14, function() {
             var deferred = utils.asyncAutocomplete(500);
 
             var $test = $("<div>", {
@@ -78,10 +78,21 @@ define(["utils"], function(utils) {
             });
             $tar.get(0).className += "attribute subtree test";
 
+            var teste2 = $("<input type='checkbox' checked />").get(0);
+            var observer4 = new MutationObserver($.noop);
+            observer4.observe(teste2, {
+                attributes: true,
+                attributeOldValue: true
+            });
+            teste2.checked = false;
+            var records = observer4.takeRecords();
+            deepEqual(records, [], "Should not match element properties (checked)")
+
             deferred.done(function() {
                 observer.disconnect();
                 observer2.disconnect();
                 observer3.disconnect();
+                observer4.disconnect();
             });
         });
     };
