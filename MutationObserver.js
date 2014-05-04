@@ -4,6 +4,7 @@
  * Repository: https://github.com/megawac/MutationObserver.js
  * License: WTFPL V2, 2004 (wtfpl.net).
  * Though credit and staring the repo will make me feel pretty, you can modify and redistribute as you please.
+ * Attempts to follow spec (http://www.w3.org/TR/dom/#mutation-observers) as closely as possible for native javascript
  * See https://github.com/WebKit/webkit/blob/master/Source/WebCore/dom/MutationObserver.cpp for current webkit source c++ implementation
  */
 
