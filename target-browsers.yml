@@ -1,0 +1,60 @@
+- #webkitMutationObserver -> MutationObserver
+    browserName: chrome
+    platform: XP
+    version: 26
+- #supported
+    browserName: chrome
+    platform: OS X 10.6
+    version: 34
+- #supported
+    browserName: firefox
+    platform: linux
+- #not supported
+    browserName: firefox
+    version: 13
+- #not supported
+    browserName: firefox
+    version: 8
+- #not supported
+    browserName: firefox
+    platform: OS X 10.9
+    version: 4
+- #not supported
+    browserName: internet explorer
+    version: 10
+- #not supported
+    browserName: internet explorer
+    version: 9
+- #not supported and extremely buggy
+    browserName: internet explorer
+    version: 8
+    platform: Windows XP
+- #not supported and extremely buggy
+    browserName: internet explorer
+    version: 7
+    platform: Windows XP
+- #not supported
+    browserName: opera
+    version: 12
+# - Sauce fails ? help
+#     browserName: opera
+#     version: 11
+- #not supported
+    browserName: safari
+    version: 5
+-
+    browserName: safari
+    version: 6
+    platform: "OS X 10.8"
+-
+    browserName: iphone
+    version: 5
+-
+    browserName: ipad
+    version: 4
+    platform: OS X 10.6
+-
+    browserName: android
+    platform: Linux
+    version: 4.3
+    deviceName: Android

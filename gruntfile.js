@@ -48,44 +48,7 @@ module.exports = function(grunt) {
                     tags: ["master"],
                     urls: ["http://localhost:8000/test/index.html"],
                     testname: "MutationObserver QUnit tests",
-                    browsers: [{ //webkitMutationObserver -> MutationObserver
-                        browserName: "chrome",
-                        platform: "XP",
-                        version: "26"
-                    }, { //supported
-                        browserName: "firefox",
-                        platform: "linux"
-                    }, { //not supported
-                        browserName: "firefox",
-                        version: "13"
-                    }, { //not supported
-                        browserName: "firefox",
-                        platform: "OS X 10.9",
-                        version: "4"
-                    }, { //not supported
-                        browserName: "internet explorer",
-                        version: "10"
-                    }, { //not supported
-                        browserName: "internet explorer",
-                        version: "9"
-                    }, { //not supported and extremely buggy
-                        browserName: "internet explorer",
-                        version: "8",
-                        platform: "Windows XP"
-                    }, { //not supported and extremely buggy
-                        browserName: "internet explorer",
-                        version: "7",
-                        platform: "Windows XP"
-                    }, { //not supported
-                        browserName: "opera",
-                        version: "12"
-                    }, { //not supported
-                        browserName: "safari",
-                        version: "5"
-                    }, {
-                        browserName: "iphone",
-                        version: "5"
-                    }]
+                    browsers: grunt.file.readYAML("target-browsers.yml")
                 }
             }
         },
