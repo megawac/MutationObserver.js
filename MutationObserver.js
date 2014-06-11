@@ -126,7 +126,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
          * @return undefined
          */
         disconnect: function() {
-            this._watched.length = 0; //clear the stuff being observed
+            this._watched = []; //clear the stuff being observed
             clearTimeout(this._timeout); //ready for garbage collection
             /** @private */
             this._timeout = null;
@@ -296,7 +296,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     }));
                 }
                 //now look @ subtree
-                if (config.descendents) findMut($cur, oldstruct);
+                if (config.descendents) findMutations($cur, oldstruct);
             }
         }
 
@@ -305,7 +305,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
          * @param {Node} node
          * @param {!Object} old : A cloned data structure using internal clone
          */
-        function findMut(node, old) {
+        function findMutations(node, old) {
             var $kids = node.childNodes;
             var $oldkids = old.kids;
             var klen = $kids.length;
@@ -333,7 +333,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                 //current and old nodes at the indexs
                 $cur = $kids[i];
                 oldstruct = $oldkids[j];
-                $old = oldstruct && oldstruct["node"];
+                $old = oldstruct && oldstruct.node;
 
                 if ($cur === $old) { //expected case - optimized for this case
                     //check attributes as specified by config
@@ -351,7 +351,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids, numAddedNodes);
 
                     //recurse on next level of children. Avoids the recursive call when $cur.firstChild is null and kids.length is 0
-                    if (config.descendents && ($cur.childNodes.length || oldstruct.kids.length)) findMut($cur, oldstruct);
+                    if (config.descendents && ($cur.childNodes.length || oldstruct.kids.length)) findMutations($cur, oldstruct);
 
                     i++;
                     j++;
@@ -395,7 +395,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                                 if(config.kids) {
                                     mutations.push(MutationRecord({
                                         type: "childList",
-                                        target: old["node"],
+                                        target: old.node,
                                         removedNodes: [$old],
                                         nextSibling: $oldkids[j + 1], //praise no indexoutofbounds exception
                                         previousSibling: $oldkids[j - 1]
@@ -418,7 +418,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             //resolve any remaining conflicts
             if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids, numAddedNodes);
         }
-        findMut($target, $oldstate);
+        findMutations($target, $oldstate);
     }
 
     /**
@@ -435,7 +435,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             var isText = $target.nodeType === 3;
             var elestruct = {
                 /** @type {Node} */
-                "node": $target
+                node: $target
             };
 
             if(config.attr && !isText && (top || config.descendents)) {
@@ -473,7 +473,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      * @return {number}
      */
     function indexOfCustomNode(set, $node, idx) {
-        return indexOf(set, $node, idx, "node");
+        return indexOf(set, $node, idx, JSCompiler_renameProperty("node"));
     }
 
     //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
@@ -546,6 +546,11 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      */
     function has(obj, prop) {
         return obj[prop] !== undefined; //will be nicely inlined by gcc
+    }
+
+    // GCC hack see http://stackoverflow.com/a/23202438/1517919
+    function JSCompiler_renameProperty(a) {
+        return a;
     }
 
     return MutationObserver;
