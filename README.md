@@ -2,11 +2,12 @@ MutationObserver [![Build Status](https://travis-ci.org/megawac/MutationObserver
 ========================
 
 [![Browser Test Status](https://saucelabs.com/browser-matrix/mutationobserver.svg)](https://saucelabs.com/u/mutationobserver)  
-<sup>Note: IE7 fails due to quirky attribute handling ([see #4](https://github.com/megawac/MutationObserver.js/issues/4))</sup>
+<sup>Note: IE7 fails due to quirky attribute handling ([see #4](https://github.com/megawac/MutationObserver.js/issues/4))  
+Safari 6.0.5 uses a buggy `WebKitMutationObserver` (don't have a computer with Safari to test on unfortuantely)</sup>
 
 A polyfill for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131107/#mutation-observers) ([can I use?](http://caniuse.com/mutationobserver)). The polyfill is more cause we can than should (with subtree at any rate)... It's async and uses a recursive timeout fallback (default checks changes every 30ms + runtime) instead of using the deprecated [DOM3 MutationEvents](http://www.w3.org/TR/DOM-Level-3-Events/#events-mutationevents) so theoretically can support virtually any browser.  
  
-### polyfill differences from standard interface
+### Polyfill differences from standard interface
 
 #### MutationObserver
 
@@ -43,12 +44,11 @@ The included minified file has been tuned for performance.
 
 ### Compatibility
 
-I've tested and verified compatibility in the following browsers
+I've tested and verified compatibility in the following browsers + [these Sauce browsers](https://saucelabs.com/u/mutationobserver)
 
 * Internet Explorer 8 (emulated), 9, 10 in win7 and win8
 * Firefox 4, 21, 24, 26 in OSX, win7 and win8
 * Opera 11.8, 12.16 in win7
-* Safari 6.0.5 on OSX
 * "Internet" on Android HTC One V
 * Blackberry 6.0.16
 
