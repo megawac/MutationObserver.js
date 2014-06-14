@@ -433,10 +433,16 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
         var top = true;
         return (function copy($target) {
             var isText = $target.nodeType === 3;
+            var isComment = $target.nodeType === 8;
             var elestruct = {
                 /** @type {Node} */
-                node: $target
+                node: $target,
+                kids: []
             };
+
+            if (isComment) {
+                return elestruct;
+            }
 
             if(config.attr && !isText && (top || config.descendents)) {
                 /**
