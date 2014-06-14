@@ -2,14 +2,19 @@
   "name": "MutationObserver-Shim",
   "short name": "mutationobserver",
   "description": "MutationObserver shim for ES3 environments",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "keywords": [
-    "DOM", "observer", "mutation observer", "MutationObserver"
+    "DOM",
+    "observer",
+    "mutation observer",
+    "MutationObserver"
   ],
-  "authors": [{
+  "authors": [
+    {
       "name": "Graeme Yeates",
       "email": "github.com/megawac"
-  }],
+    }
+  ],
   "repository": {
     "type": "git",
     "git": "git@github.com:megawac/MutationObserver.js.git",

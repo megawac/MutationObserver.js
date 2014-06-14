@@ -57,4 +57,3 @@
     browserName: android
     platform: Linux
     version: 4.3
-    deviceName: Android
