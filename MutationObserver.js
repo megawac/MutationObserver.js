@@ -433,38 +433,35 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
         var top = true;
         return (function copy($target) {
             var isText = $target.nodeType === 3;
-            var isComment = $target.nodeType === 8;
             var elestruct = {
                 /** @type {Node} */
                 node: $target,
-                kids: []
+                kids: "" //hacky optimization. just need a object with `length` property
             };
 
-            if (isComment) {
-                return elestruct;
-            }
+            if (isText || $target.nodeType === 8) {
+                if (isText && config.charData) {
+                    elestruct.charData = $target.nodeValue;
+                }
+            } else {
+                if(config.attr && (top || config.descendents)) {
+                    /**
+                     * clone live attribute list to an object structure {name: val}
+                     * @type {Object.<string, string>}
+                     */
+                    elestruct.attr = reduce($target.attributes, function(memo, attr) {
+                        if (!config.afilter || config.afilter[attr.name]) {
+                            memo[attr.name] = attr.value;
+                        }
+                        return memo;
+                    }, {});
+                }
 
-            if(config.attr && !isText && (top || config.descendents)) {
-                /**
-                 * clone live attribute list to an object structure {name: val}
-                 * @type {Object.<string, string>}
-                 */
-                elestruct.attr = reduce($target.attributes, function(memo, attr) {
-                    if (!config.afilter || config.afilter[attr.name]) {
-                        memo[attr.name] = attr.value;
-                    }
-                    return memo;
-                }, {});
-            }
-
-            if(config.charData && isText) {
-                elestruct.charData = $target.nodeValue;
-            }
-
-            if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
-                top = false;
-                /** @type {Array.<!Object>} : Array of custom clone */
-                elestruct.kids = map($target.childNodes, copy);
+                if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
+                    top = false;
+                    /** @type {Array.<!Object>} : Array of custom clone */
+                    elestruct.kids = map($target.childNodes, copy);
+                }
             }
             return elestruct;
         })($target);

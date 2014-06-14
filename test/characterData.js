@@ -1,6 +1,6 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("characterData", 3, function() {
+        QUnit.asyncTest("characterData", 4, function() {
             var deferred = utils.asyncAutocomplete(500);
 
             var $test = $("<div>", {
@@ -51,12 +51,22 @@ define(["utils"], function(utils) {
             for (var i = 0; i < textNodes.length -1; i++) {//native implementations fail for some reason when you remove a textnode and then change its text
                 textNodes[i].nodeValue = "something else" + i;
             }
+
+            var observer3 = new MutationObserver(function(/*items, observer*/) {});
+            var $test3 = $("<div><span class='name'>3</span><span class='name'>2</span><span class='name'>1</span></div>");
+            var comment = document.createComment("don't check comments");
+            $test3.prepend(comment);
+            observer3.observe($test3.get(0), {
+                "characterData" : true,
+                "subtree": true
+            });
+            comment.textContent = "test";
+            ok(observer3.takeRecords(), [], "ignores comment nodes");
             
-
-
             deferred.done(function() {
                 observer.disconnect();
                 observer2.disconnect();
+                observer3.disconnect();
             });
         });
     };

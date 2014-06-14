@@ -85,10 +85,8 @@ define(["utils"], function(utils) {
             $tar2.get(0).className += "attribute subtree test";
             $tar2.append("<span class='a'>text</span>");
 
-            // #8
-            var observer3 = new MutationObserver(function(items, observer) {
-
-            });
+            // ie8 and 9 will throw for comment nodes if you're not careful #8
+            var observer3 = new MutationObserver(function(/*items, observer*/) {});
             var $test3 = $("<div><span class='name'>3</span><span class='name'>2</span><span class='name'>1</span></div>");
             $test3.prepend(document.createComment("don't break on comments"));
             observer3.observe($test3.get(0), {
