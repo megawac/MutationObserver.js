@@ -160,9 +160,17 @@ define([], function() {
         },
 
         asyncAutocomplete: function(delay) {
+            var oldTimout = QUnit.config.testTimeout;
+            if (delay + 200 < oldTimout) {
+                QUnit.config.testTimeout = delay + 200;
+            }
+
             var deferred = $.Deferred();
             deferred.done(function() {
                 QUnit.start();
+                if (oldTimout != QUnit.config.testTimeout) {
+                    QUnit.config.testTimeout = oldTimout;
+                }
             });
             setTimeout(function() {
                 deferred.resolve();

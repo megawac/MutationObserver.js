@@ -310,7 +310,8 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             var $kids = node.childNodes;
             var $oldkids = old.kids;
             var klen = $kids.length;
-            var olen = $oldkids.length;
+            // $oldkids will be undefined for text and comment nodes
+            var olen = $oldkids ? $oldkids.length : 0;
             // if (!olen && !klen) return; //both empty; clearly no changes
 
             //we delay the intialization of these for marginal performance in the expected case (actually quite signficant on large subtrees when these would be otherwise unused)
@@ -353,7 +354,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids, numAddedNodes);
 
                     //recurse on next level of children. Avoids the recursive call when there are no children left to iterate
-                    if (config.descendents && ($cur.childNodes.length || oldstruct.kids.length)) findMutations($cur, oldstruct);
+                    if (config.descendents && ($cur.childNodes.length || oldstruct.kids && oldstruct.kids.length)) findMutations($cur, oldstruct);
 
                     i++;
                     j++;
@@ -438,8 +439,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             var isText = $target.nodeType === 3;
             var elestruct = {
                 /** @type {Node} */
-                node: $target,
-                kids: "" //hacky optimization. just need a object with `length` property
+                node: $target
             };
 
             //is text or comemnt node
