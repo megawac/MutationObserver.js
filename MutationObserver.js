@@ -280,6 +280,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                         target: node,
                         addedNodes: [$cur],
                         removedNodes: [$cur],
+                        // haha don't rely on this please
                         nextSibling: $cur.nextSibling,
                         previousSibling: $cur.previousSibling
                     }));
@@ -324,6 +325,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             //current and old nodes
             var $cur;
             var $old;
+            //track the number of added nodes so we can resolve conflicts more accurately
             var numAddedNodes = 0;
             
             //iterate over both old and current child nodes at the same time
@@ -347,10 +349,10 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                         }));
                     }
 
-                    //resolve conflicts
+                    //resolve conflicts; it will be undefined if there are no conflicts - otherwise an array
                     if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids, numAddedNodes);
 
-                    //recurse on next level of children. Avoids the recursive call when $cur.firstChild is null and kids.length is 0
+                    //recurse on next level of children. Avoids the recursive call when there are no children left to iterate
                     if (config.descendents && ($cur.childNodes.length || oldstruct.kids.length)) findMutations($cur, oldstruct);
 
                     i++;
@@ -363,6 +365,8 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     if ($cur) {
                         //check id is in the location map otherwise do a indexOf search
                         if (!(map[id = getElementId($cur)])) { //to prevent double checking
+                            //mark id as found
+                            map[id] = true;
                             //custom indexOf using comparitor checking oldkids[i].node === $cur
                             if ((idx = indexOfCustomNode($oldkids, $cur, j)) === -1) {
                                 if (config.kids) {
@@ -376,7 +380,6 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                                     numAddedNodes++;
                                 }
                             } else {
-                                map[id] = true; //mark id as found
                                 conflicts.push({ //add conflict
                                     i: i,
                                     j: idx
@@ -391,6 +394,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                        $old !== $kids[i]
                     ) {
                         if (!(map[id = getElementId($old)])) {
+                            map[id] = true;
                             if ((idx = indexOf($kids, $old, i)) === -1) {
                                 if(config.kids) {
                                     mutations.push(MutationRecord({
@@ -403,7 +407,6 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                                     numAddedNodes--;
                                 }
                             } else {
-                                map[id] = true;
                                 conflicts.push({
                                     i: idx,
                                     j: j
