@@ -430,7 +430,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      * @return {!Object} : Cloned data structure
      */
     function clone($target, config) {
-        var top = true;
+        var recurse = true; // set true so childList we'll always check the first level
         return (function copy($target) {
             var isText = $target.nodeType === 3;
             var elestruct = {
@@ -439,12 +439,14 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                 kids: "" //hacky optimization. just need a object with `length` property
             };
 
+            //is text or comemnt node
             if (isText || $target.nodeType === 8) {
                 if (isText && config.charData) {
                     elestruct.charData = $target.nodeValue;
                 }
-            } else {
-                if(config.attr && (top || config.descendents)) {
+            } else { //its either a element or document node (or something stupid)
+
+                if(config.attr && recurse) { // add attr only if subtree is specified or top level
                     /**
                      * clone live attribute list to an object structure {name: val}
                      * @type {Object.<string, string>}
@@ -457,11 +459,13 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     }, {});
                 }
 
-                if( ((config.kids || config.charData) && (top || config.descendents)) || (config.attr && config.descendents) ) {
-                    top = false;
+                // whether we should iterate the children of $target node
+                if(recurse && ((config.kids || config.charData) || (config.attr && config.descendents)) ) {
                     /** @type {Array.<!Object>} : Array of custom clone */
                     elestruct.kids = map($target.childNodes, copy);
                 }
+                
+                recurse = config.descendents;
             }
             return elestruct;
         })($target);
