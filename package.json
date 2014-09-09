@@ -1,5 +1,5 @@
 {
-  "name": "MutationObserver-Shim",
+  "name": "mutationobserver-shim",
   "short name": "mutationobserver",
   "description": "MutationObserver shim for ES3 environments",
   "version": "0.2.7",
@@ -31,8 +31,7 @@
   "license": {
     "type": "WTFPL",
     "version": "v2 2004",
-    "url": "http://www.wtfpl.net/",
-    "details": "Feel free to use/modify/redistribute my code however the fuck you want"
+    "url": "http://www.wtfpl.net/"
   },
   "devDependencies": {
     "phantomjs": "1.9.x",

@@ -2,6 +2,6 @@
 
 *Compiled by Google closure compiler in `ADVANCED_OPTIMIZATIONS`*  
 
-- Original: 23.3 kB
+- Original: 23.4 kB
 - Minified: 3.3 kB
-- Gzipped:  782 bytes
+- Gzipped:  781 bytes
