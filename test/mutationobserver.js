@@ -1,6 +1,6 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("Core", 7, function() {
+        QUnit.asyncTest("Core", 9, function() {
             var deferred = utils.asyncAutocomplete();
 
             var $test = $("<div>", {
@@ -25,10 +25,12 @@ define(["utils"], function(utils) {
             var mutations;
             var observer1 = new MutationObserver(function(items, observer) {
                 equal(items.length, 4, "observer1 was called correctly");
-                ok(observer instanceof MutationObserver, "Change event called with observer as second argument");
+                ok(observer  === observer1, "Change event called with observer as second argument");
+                ok(this === observer1, "Change event called with observer as second argument");
 
                 deepEqual(items, mutations, "Observer1 called with the same records from .takeRecords");
             });
+            ok(observer1 instanceof MutationObserver, "should be an instance of MutationObserver");
 
             var observer2 = new MutationObserver(function(items) {
                 equal(items.length, 4, "observer2 was called correctly on the same watched element");

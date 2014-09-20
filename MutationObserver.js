@@ -20,35 +20,41 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      * @constructor
      */
     function MutationObserver(listener) {
-        var self = this;
         /**
-         * @type {Array.<function(Array.<MutationRecord>)>}
+         * @type {Array.<Object>}
          * @private
          */
-        self._watched = [];
-        /** 
-         * Recursive timeout function to check all observed items for mutations
-         * @private
-         */
-        self._checker = function() {
-            var mutations = self.takeRecords();
-
-            if (mutations.length) { //fire away
-                listener.call(self, mutations, self); //call is not spec but consistent with other implementations
-            }
-            /** @private */
-            self._timeout = setTimeout(self._checker, MutationObserver._period);
-        };
+        this._watched = [];
+        /** @private */
+        this._listener = listener;
     }
 
-    /** 
+    /**
+     * Start a recursive timeout function to check all items being observed for mutations
+     * @type {MutationObserver} observer
+     * @private
+     */
+    function startMutationChecker(observer) {
+        (function check() {
+            var mutations = observer.takeRecords();
+
+            if (mutations.length) { //fire away
+                //calling the listener with context is not spec but currently consistent with FF and WebKit
+                observer._listener(mutations, observer);
+            }
+            /** @private */
+            observer._timeout = setTimeout(check, MutationObserver._period);
+        })();
+    }
+
+    /**
      * Period to check for mutations (~32 times/sec)
      * @type {number}
      * @expose
      */
     MutationObserver._period = 30 /*ms+runtime*/ ;
 
-    /** 
+    /**
      * Exposed API
      * @expose
      * @final
@@ -57,13 +63,13 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
         /**
          * see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
          * not going to throw here but going to follow the current spec config sets
-         * @param {Node} $target
-         * @param {Object} config : MutationObserverInit configuration dictionary
+         * @param {Node|null} $target
+         * @param {Object|null} config : MutationObserverInit configuration dictionary
          * @expose
          * @return undefined
          */
         observe: function($target, config) {
-            /** 
+            /**
              * Using slightly different names so closure can go ham
              * @type {!Object} : A custom mutation config
              */
@@ -101,7 +107,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
 
             //reconnect if not connected
             if (!this._timeout) {
-                this._checker();
+                startMutationChecker(this);
             }
         },
 
@@ -136,10 +142,9 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
     /**
      * Simple MutationRecord pseudoclass. No longer exposing as its not fully compliant
      * @param {Object} data
-     * @return {MutationRecord}
+     * @return {Object} a MutationRecord
      */
     function MutationRecord(data) {
-        /** @typedef {MutationRecord} */
         var settings = { //technically these should be on proto so hasOwnProperty will return false for non explicitly props
             type: null,
             target: null,
@@ -254,7 +259,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      */
     function searchSubtree(mutations, $target, $oldstate, config) {
         /*
-         * Helper to identify node rearrangment and stuff... 
+         * Helper to identify node rearrangment and stuff...
          * There is no gaurentee that the same node will be identified for both added and removed nodes
          * if the positions have been shuffled.
          * conflicts array will be emptied by end of operation
@@ -328,7 +333,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             var $old;
             //track the number of added nodes so we can resolve conflicts more accurately
             var numAddedNodes = 0;
-            
+
             //iterate over both old and current child nodes at the same time
             var i = 0, j = 0;
             //while there is still anything left in $kids or $oldkids (same as i < $kids.length || j < $oldkids.length;)
@@ -428,7 +433,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
     /**
      * Utility
      * Cones a element into a custom data structure designed for comparision. https://gist.github.com/megawac/8201012
-     * 
+     *
      * @param {Node} $target
      * @param {!Object} config : A custom mutation config
      * @return {!Object} : Cloned data structure
@@ -467,7 +472,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     /** @type {Array.<!Object>} : Array of custom clone */
                     elestruct.kids = map($target.childNodes, copy);
                 }
-                
+
                 recurse = config.descendents;
             }
             return elestruct;
@@ -477,7 +482,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
     /**
      * indexOf an element in a collection of custom nodes
      *
-     * @param {Node} set
+     * @param {NodeList} set
      * @param {!Object} $node : A custom cloned node
      * @param {number} idx : index to start the loop
      * @return {number}
@@ -524,7 +529,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
 
     /**
      * **Reduce** builds up a single result from a list of values
-     * @param {Array|NodeList} set
+     * @param {Array|NodeList|NamedNodeMap} set
      * @param {Function} iterator
      * @param {*} [memo] Initial value of the memo.
      */
@@ -564,4 +569,4 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
     }
 
     return MutationObserver;
-})();
+})(void 0);
