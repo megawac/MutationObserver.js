@@ -20,7 +20,7 @@
     "git": "git@github.com:megawac/MutationObserver.js.git",
     "url": "github.com/megawac/MutationObserver.js"
   },
-  "main": "MutationObserver.js",
+  "main": "dist/mutationobserver.min.js",
   "scripts": {
     "test": "grunt test --verbose"
   },
