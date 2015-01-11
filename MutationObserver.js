@@ -4,14 +4,14 @@
  * Repository: https://github.com/megawac/MutationObserver.js
  * License: WTFPL V2, 2004 (wtfpl.net).
  * Though credit and staring the repo will make me feel pretty, you can modify and redistribute as you please.
- * Attempts to follow spec (http://www.w3.org/TR/dom/#mutation-observers) as closely as possible for native javascript
+ * Attempts to follow spec (http:// www.w3.org/TR/dom/#mutation-observers) as closely as possible for native javascript
  * See https://github.com/WebKit/webkit/blob/master/Source/WebCore/dom/MutationObserver.cpp for current webkit source c++ implementation
  */
 
 /**
  * prefix bugs:
-    -https://bugs.webkit.org/show_bug.cgi?id=85161
-    -https://bugzilla.mozilla.org/show_bug.cgi?id=749920
+    - https://bugs.webkit.org/show_bug.cgi?id=85161
+    - https://bugzilla.mozilla.org/show_bug.cgi?id=749920
 */
 this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || (function(undefined) {
     "use strict";
@@ -38,8 +38,8 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
         (function check() {
             var mutations = observer.takeRecords();
 
-            if (mutations.length) { //fire away
-                //calling the listener with context is not spec but currently consistent with FF and WebKit
+            if (mutations.length) { // fire away
+                // calling the listener with context is not spec but currently consistent with FF and WebKit
                 observer._listener(mutations, observer);
             }
             /** @private */
@@ -61,7 +61,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      */
     MutationObserver.prototype = {
         /**
-         * see http://dom.spec.whatwg.org/#dom-mutationobserver-observe
+         * see http:// dom.spec.whatwg.org/#dom-mutationobserver-observe
          * not going to throw here but going to follow the current spec config sets
          * @param {Node|null} $target
          * @param {Object|null} config : MutationObserverInit configuration dictionary
@@ -76,7 +76,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             var settings = {
                 attr: !! (config.attributes || config.attributeFilter || config.attributeOldValue),
 
-                //some browsers are strict in their implementation that config.subtree and childList must be set together. We don't care - spec doesn't specify
+                // some browsers are strict in their implementation that config.subtree and childList must be set together. We don't care - spec doesn't specify
                 kids: !! config.childList,
                 descendents: !! config.subtree,
                 charData: !! (config.characterData || config.characterDataOldValue)
@@ -84,7 +84,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
 
             var watched = this._watched;
 
-            //remove already observed target element from pool
+            // remove already observed target element from pool
             for (var i = 0; i < watched.length; i++) {
                 if (watched[i].tar === $target) watched.splice(i, 1);
             }
@@ -105,7 +105,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                 fn: createMutationSearcher($target, settings)
             });
 
-            //reconnect if not connected
+            // reconnect if not connected
             if (!this._timeout) {
                 startMutationChecker(this);
             }
@@ -132,8 +132,8 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
          * @return undefined
          */
         disconnect: function() {
-            this._watched = []; //clear the stuff being observed
-            clearTimeout(this._timeout); //ready for garbage collection
+            this._watched = []; // clear the stuff being observed
+            clearTimeout(this._timeout); // ready for garbage collection
             /** @private */
             this._timeout = null;
         }
@@ -145,7 +145,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      * @return {Object} a MutationRecord
      */
     function MutationRecord(data) {
-        var settings = { //technically these should be on proto so hasOwnProperty will return false for non explicitly props
+        var settings = { // technically these should be on proto so hasOwnProperty will return false for non explicitly props
             type: null,
             target: null,
             addedNodes: [],
@@ -170,7 +170,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      */
     function createMutationSearcher($target, config) {
         /** type {Elestuct} */
-        var $oldstate = clone($target, config); //create the cloned datastructure
+        var $oldstate = clone($target, config); // create the cloned datastructure
 
         /**
          * consumes array of mutations we can push to
@@ -180,18 +180,18 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
         return function(mutations) {
             var olen = mutations.length;
 
-            //Alright we check base level changes in attributes... easy
+            // Alright we check base level changes in attributes... easy
             if (config.attr && $oldstate.attr) {
                 findAttributeMutations(mutations, $target, $oldstate.attr, config.afilter);
             }
 
-            //check childlist or subtree for mutations
+            // check childlist or subtree for mutations
             if (config.kids || config.descendents) {
                 searchSubtree(mutations, $target, $oldstate, config);
             }
 
 
-            //reclone data structure if theres changes
+            // reclone data structure if theres changes
             if (mutations.length !== olen) {
                 /** type {Elestuct} */
                 $oldstate = clone($target, config);
@@ -221,13 +221,13 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             name = attr.name;
             if (!filter || has(filter, name)) {
                 if (attr.value !== $oldstate[name]) {
-                    //The pushing is redundant but gzips very nicely
+                    // The pushing is redundant but gzips very nicely
                     mutations.push(MutationRecord({
                         type: "attributes",
                         target: $target,
                         attributeName: name,
                         oldValue: $oldstate[name],
-                        attributeNamespace: attr.namespaceURI //in ie<8 it incorrectly will return undefined
+                        attributeNamespace: attr.namespaceURI // in ie<8 it incorrectly will return undefined
                     }));
                 }
                 checked[name] = true;
@@ -277,8 +277,8 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                 $cur = $kids[conflict.i];
                 oldstruct = $oldkids[conflict.j];
 
-                //attempt to determine if there was node rearrangement... won't gaurentee all matches
-                //also handles case where added/removed nodes cause nodes to be identified as conflicts
+                // attempt to determine if there was node rearrangement... won't gaurentee all matches
+                // also handles case where added/removed nodes cause nodes to be identified as conflicts
                 if (config.kids && counter && Math.abs(conflict.i - conflict.j) >= distance) {
                     mutations.push(MutationRecord({
                         type: "childList",
@@ -289,10 +289,10 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                         nextSibling: $cur.nextSibling,
                         previousSibling: $cur.previousSibling
                     }));
-                    counter--; //found conflict
+                    counter--; // found conflict
                 }
 
-                //Alright we found the resorted nodes now check for other types of mutations
+                // Alright we found the resorted nodes now check for other types of mutations
                 if (config.attr && oldstruct.attr) findAttributeMutations(mutations, $cur, oldstruct.attr, config.afilter);
                 if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
                     mutations.push(MutationRecord({
@@ -301,7 +301,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                         oldValue: oldstruct.charData
                     }));
                 }
-                //now look @ subtree
+                // now look @ subtree
                 if (config.descendents) findMutations($cur, oldstruct);
             }
         }
@@ -317,36 +317,36 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             var klen = $kids.length;
             // $oldkids will be undefined for text and comment nodes
             var olen = $oldkids ? $oldkids.length : 0;
-            // if (!olen && !klen) return; //both empty; clearly no changes
+            // if (!olen && !klen) return; // both empty; clearly no changes
 
-            //we delay the intialization of these for marginal performance in the expected case (actually quite signficant on large subtrees when these would be otherwise unused)
-            //map of checked element of ids to prevent registering the same conflict twice
+            // we delay the intialization of these for marginal performance in the expected case (actually quite signficant on large subtrees when these would be otherwise unused)
+            // map of checked element of ids to prevent registering the same conflict twice
             var map;
-            //array of potential conflicts (ie nodes that may have been re arranged)
+            // array of potential conflicts (ie nodes that may have been re arranged)
             var conflicts;
-            var id; //element id from getElementId helper
-            var idx; //index of a moved or inserted element
+            var id; // element id from getElementId helper
+            var idx; // index of a moved or inserted element
 
             var oldstruct;
-            //current and old nodes
+            // current and old nodes
             var $cur;
             var $old;
-            //track the number of added nodes so we can resolve conflicts more accurately
+            // track the number of added nodes so we can resolve conflicts more accurately
             var numAddedNodes = 0;
 
-            //iterate over both old and current child nodes at the same time
+            // iterate over both old and current child nodes at the same time
             var i = 0, j = 0;
-            //while there is still anything left in $kids or $oldkids (same as i < $kids.length || j < $oldkids.length;)
+            // while there is still anything left in $kids or $oldkids (same as i < $kids.length || j < $oldkids.length;)
             while( i < klen || j < olen ) {
-                //current and old nodes at the indexs
+                // current and old nodes at the indexs
                 $cur = $kids[i];
                 oldstruct = $oldkids[j];
                 $old = oldstruct && oldstruct.node;
 
-                if ($cur === $old) { //expected case - optimized for this case
-                    //check attributes as specified by config
+                if ($cur === $old) { // expected case - optimized for this case
+                    // check attributes as specified by config
                     if (config.attr && oldstruct.attr) /* oldstruct.attr instead of textnode check */findAttributeMutations(mutations, $cur, oldstruct.attr, config.afilter);
-                    //check character data if set
+                    // check character data if set
                     if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
                         mutations.push(MutationRecord({
                             type: "characterData",
@@ -355,38 +355,38 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                         }));
                     }
 
-                    //resolve conflicts; it will be undefined if there are no conflicts - otherwise an array
+                    // resolve conflicts; it will be undefined if there are no conflicts - otherwise an array
                     if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids, numAddedNodes);
 
-                    //recurse on next level of children. Avoids the recursive call when there are no children left to iterate
+                    // recurse on next level of children. Avoids the recursive call when there are no children left to iterate
                     if (config.descendents && ($cur.childNodes.length || oldstruct.kids && oldstruct.kids.length)) findMutations($cur, oldstruct);
 
                     i++;
                     j++;
-                } else { //(uncommon case) lookahead until they are the same again or the end of children
-                    if(!map) { //delayed initalization (big perf benefit)
+                } else { // (uncommon case) lookahead until they are the same again or the end of children
+                    if (!map) { // delayed initalization (big perf benefit)
                         map = {};
                         conflicts = [];
                     }
                     if ($cur) {
-                        //check id is in the location map otherwise do a indexOf search
-                        if (!(map[id = getElementId($cur)])) { //to prevent double checking
-                            //mark id as found
+                        // check id is in the location map otherwise do a indexOf search
+                        if (!(map[id = getElementId($cur)])) { // to prevent double checking
+                            // mark id as found
                             map[id] = true;
-                            //custom indexOf using comparitor checking oldkids[i].node === $cur
+                            // custom indexOf using comparitor checking oldkids[i].node === $cur
                             if ((idx = indexOfCustomNode($oldkids, $cur, j)) === -1) {
                                 if (config.kids) {
                                     mutations.push(MutationRecord({
                                         type: "childList",
                                         target: node,
-                                        addedNodes: [$cur], //$cur is a new node
+                                        addedNodes: [$cur], // $cur is a new node
                                         nextSibling: $cur.nextSibling,
                                         previousSibling: $cur.previousSibling
                                     }));
                                     numAddedNodes++;
                                 }
                             } else {
-                                conflicts.push({ //add conflict
+                                conflicts.push({ // add conflict
                                     i: i,
                                     j: idx
                                 });
@@ -396,18 +396,18 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     }
 
                     if ($old &&
-                       //special case: the changes may have been resolved: i and j appear congurent so we can continue using the expected case
+                       // special case: the changes may have been resolved: i and j appear congurent so we can continue using the expected case
                        $old !== $kids[i]
                     ) {
                         if (!(map[id = getElementId($old)])) {
                             map[id] = true;
                             if ((idx = indexOf($kids, $old, i)) === -1) {
-                                if(config.kids) {
+                                if (config.kids) {
                                     mutations.push(MutationRecord({
                                         type: "childList",
                                         target: old.node,
                                         removedNodes: [$old],
-                                        nextSibling: $oldkids[j + 1], //praise no indexoutofbounds exception
+                                        nextSibling: $oldkids[j + 1], // praise no indexoutofbounds exception
                                         previousSibling: $oldkids[j - 1]
                                     }));
                                     numAddedNodes--;
@@ -421,10 +421,10 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                         }
                         j++;
                     }
-                }//end uncommon case
-            }//end loop
+                }// end uncommon case
+            }// end loop
 
-            //resolve any remaining conflicts
+            // resolve any remaining conflicts
             if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids, numAddedNodes);
         }
         findMutations($target, $oldstate);
@@ -447,14 +447,14 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                 node: $target
             };
 
-            //is text or comemnt node
+            // is text or comemnt node
             if (isText || $target.nodeType === 8) {
                 if (isText && config.charData) {
                     elestruct.charData = $target.nodeValue;
                 }
-            } else { //its either a element or document node (or something stupid)
+            } else { // its either a element or document node (or something stupid)
 
-                if(config.attr && recurse) { // add attr only if subtree is specified or top level
+                if (config.attr && recurse) { // add attr only if subtree is specified or top level
                     /**
                      * clone live attribute list to an object structure {name: val}
                      * @type {Object.<string, string>}
@@ -468,7 +468,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                 }
 
                 // whether we should iterate the children of $target node
-                if(recurse && ((config.kids || config.charData) || (config.attr && config.descendents)) ) {
+                if (recurse && ((config.kids || config.charData) || (config.attr && config.descendents)) ) {
                     /** @type {Array.<!Object>} : Array of custom clone */
                     elestruct.kids = map($target.childNodes, copy);
                 }
@@ -491,8 +491,8 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
         return indexOf(set, $node, idx, JSCompiler_renameProperty("node"));
     }
 
-    //using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
-    var counter = 1; //don't use 0 as id (falsy)
+    // using a non id (eg outerHTML or nodeValue) is extremely naive and will run into issues with nodes that may appear the same like <li></li>
+    var counter = 1; // don't use 0 as id (falsy)
     /** @const */
     var expando = "mo_id";
 
@@ -505,10 +505,10 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
     function getElementId($ele) {
         try {
             return $ele.id || ($ele[expando] = $ele[expando] || counter++);
-        } catch (o_O) { //ie <8 will throw if you set an unknown property on a text node
+        } catch (o_O) { // ie <8 will throw if you set an unknown property on a text node
             try {
-                return $ele.nodeValue; //naive
-            } catch (shitie) { //when text node is removed: https://gist.github.com/megawac/8355978 :(
+                return $ele.nodeValue; // naive
+            } catch (shitie) { // when text node is removed: https://gist.github.com/megawac/8355978 :(
                 return counter++;
             }
         }
@@ -548,7 +548,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      * @param {string} [prop] Property on set item to compare to item
      */
     function indexOf(set, item, idx, prop) {
-        for (/*idx = ~~idx*/; idx < set.length; idx++) {//start idx is always given as this is internal
+        for (/*idx = ~~idx*/; idx < set.length; idx++) {// start idx is always given as this is internal
             if ((prop ? set[idx][prop] : set[idx]) === item) return idx;
         }
         return -1;
@@ -560,10 +560,10 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      * @return {boolean}
      */
     function has(obj, prop) {
-        return obj[prop] !== undefined; //will be nicely inlined by gcc
+        return obj[prop] !== undefined; // will be nicely inlined by gcc
     }
 
-    // GCC hack see http://stackoverflow.com/a/23202438/1517919
+    // GCC hack see http:// stackoverflow.com/a/23202438/1517919
     function JSCompiler_renameProperty(a) {
         return a;
     }
