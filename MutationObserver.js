@@ -13,7 +13,7 @@
     - https://bugs.webkit.org/show_bug.cgi?id=85161
     - https://bugzilla.mozilla.org/show_bug.cgi?id=749920
 */
-this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || (function(undefined) {
+window.MutationObserver = window.MutationObserver || window.WebKitMutationObserver || (function(undefined) {
     "use strict";
     /**
      * @param {function(Array.<MutationRecord>, MutationObserver)} listener
