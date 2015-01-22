@@ -39,7 +39,7 @@ Currently supports the following [MutationObserverInit properties](https://devel
 
 ### Performance
 
-By default, the polyfill will check observed nodes about 25 times per second (30 ms interval) for mutations. Try running [these jsperf.com tests](http://jsperf.com/mutationobserver-shim) and the JSLitmus tests in the test suite for usage performance tests. It may be worthwile to adapt `MutaitonObserver._period` based on UA or heuristics (todo).
+By default, the polyfill will check observed nodes about 25 times per second (30 ms interval) for mutations. Try running [these jsperf.com tests](http://jsperf.com/mutationobserver-shim) and the JSLitmus tests in the test suite for usage performance tests. It may be worthwile to adapt `MutationObserver._period` based on UA or heuristics (todo).
 
 From my tests observing any size element without `subtree` enabled is relatively cheap. Although I've optimized the subtree check to the best of my abilities it can be costly on large trees. You can draw your own conclusions based on the JSLitmus and jsperf tests noting that you can expect the `mo` to do its check 28+ times a second (by default).
 
