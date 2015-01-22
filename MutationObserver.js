@@ -178,7 +178,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
          * @param {Array.<MutationRecord>} mutations
          */
         return function(mutations) {
-            var olen = mutations.length;
+            var olen = mutations.length, dirty;
 
             // Alright we check base level changes in attributes... easy
             if (config.attr && $oldstate.attr) {
@@ -187,12 +187,11 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
 
             // check childlist or subtree for mutations
             if (config.kids || config.descendents) {
-                searchSubtree(mutations, $target, $oldstate, config);
+                dirty = searchSubtree(mutations, $target, $oldstate, config);
             }
 
-
             // reclone data structure if theres changes
-            if (mutations.length !== olen) {
+            if (dirty || mutations.length !== olen) {
                 /** type {Elestuct} */
                 $oldstate = clone($target, config);
             }
@@ -258,6 +257,8 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
      * @param {!Object} config : A custom mutation config
      */
     function searchSubtree(mutations, $target, $oldstate, config) {
+        // Track if the tree is dirty and has to be recomputed (#14).
+        var dirty;
         /*
          * Helper to identify node rearrangment and stuff...
          * There is no gaurentee that the same node will be identified for both added and removed nodes
@@ -273,7 +274,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             var $cur;
             var oldstruct;
             var conflict;
-            while((conflict = conflicts.pop())) {
+            while ((conflict = conflicts.pop())) {
                 $cur = $kids[conflict.i];
                 oldstruct = $oldkids[conflict.j];
 
@@ -297,8 +298,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                 if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
                     mutations.push(MutationRecord({
                         type: "characterData",
-                        target: $cur,
-                        oldValue: oldstruct.charData
+                        target: $cur
                     }));
                 }
                 // now look @ subtree
@@ -350,8 +350,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
                         mutations.push(MutationRecord({
                             type: "characterData",
-                            target: $cur,
-                            oldValue: oldstruct.charData
+                            target: $cur
                         }));
                     }
 
@@ -364,6 +363,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                     i++;
                     j++;
                 } else { // (uncommon case) lookahead until they are the same again or the end of children
+                    dirty = true;
                     if (!map) { // delayed initalization (big perf benefit)
                         map = {};
                         conflicts = [];
@@ -428,6 +428,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
             if (conflicts) resolveConflicts(conflicts, node, $kids, $oldkids, numAddedNodes);
         }
         findMutations($target, $oldstate);
+        return dirty;
     }
 
     /**
@@ -456,7 +457,7 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
 
                 // Add attr only if subtree is specified or top level and avoid if
                 // attributes is a document object (#13).
-                if (config.attr && recurse && typeof $target.attributes == "object") {
+                if (config.attr && recurse && $target.nodeType === 1) {
                     /**
                      * clone live attribute list to an object structure {name: val}
                      * @type {Object.<string, string>}

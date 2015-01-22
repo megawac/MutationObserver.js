@@ -95,29 +95,5 @@ define(["utils"], function(utils) {
                 observer4.disconnect();
             });
         });
-
-        if (typeof document.implementation === "object" || typeof document.implementation.createHTMLDocument === "function") {
-            QUnit.test("#13: observing attributes on a document", 2, function() {
-
-                var doc = document.implementation.createHTMLDocument("attr-doc");
-                var observer = new MutationObserver($.noop);
-                observer.observe(doc, {
-                    attributes: true,
-                    subtree: true
-                });
-                var $crossDocEl = $("body", doc);
-                observer.takeRecords();
-                $crossDocEl.attr("foo", "boo");
-                var records = observer.takeRecords();
-                equal(records.length, 1);
-                utils.expectRecord(records[0], {
-                    attributeName: "foo",
-                    type: "attributes",
-                    target: $crossDocEl[0]
-                });
-
-                observer.disconnect();
-            });
-        }
     };
 });
