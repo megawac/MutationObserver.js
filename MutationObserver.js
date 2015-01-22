@@ -454,7 +454,9 @@ this.MutationObserver = this.MutationObserver || this.WebKitMutationObserver || 
                 }
             } else { // its either a element or document node (or something stupid)
 
-                if (config.attr && recurse) { // add attr only if subtree is specified or top level
+                // Add attr only if subtree is specified or top level and avoid if
+                // attributes is a document object (#13).
+                if (config.attr && recurse && typeof $target.attributes == "object") {
                     /**
                      * clone live attribute list to an object structure {name: val}
                      * @type {Object.<string, string>}
