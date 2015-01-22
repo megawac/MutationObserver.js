@@ -1,6 +1,6 @@
 define(["utils"], function(utils) {
     return function() {//tests        
-        if (typeof document.implementation === "object" || typeof document.implementation.createHTMLDocument === "function") {
+        if (typeof document.implementation === "object" && typeof document.implementation.createHTMLDocument === "function") {
             QUnit.test("#13: observing a document", 4, function() {
 
                 var doc = document.implementation.createHTMLDocument("attr-doc");
