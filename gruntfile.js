@@ -49,7 +49,10 @@ module.exports = function(grunt) {
                     tags: ["master"],
                     testname: "MutationObserver QUnit tests",
                     browsers: grunt.file.readYAML("target-browsers.yml"),
-                    maxRetries: 3
+                    concurrency: 2,
+                    sauceConfig: {
+                        "video-upload-on-pass": false
+                    }
                 }
             }
         },

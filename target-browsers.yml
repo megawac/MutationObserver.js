@@ -36,13 +36,10 @@
 - #not supported
     browserName: opera
     version: 12
-# - Sauce fails ? help
-#     browserName: opera
-#     version: 11
 - #not supported
     browserName: safari
     version: 5
--
+- #supported but broken implementation
     browserName: safari
     version: 6
     platform: "OS X 10.8"
