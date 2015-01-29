@@ -2,7 +2,7 @@
   "name": "mutationobserver-shim",
   "short name": "mutationobserver",
   "description": "MutationObserver shim for ES3 environments",
-  "version": "0.2.8",
+  "version": "0.3.0",
   "keywords": [
     "DOM",
     "observer",
