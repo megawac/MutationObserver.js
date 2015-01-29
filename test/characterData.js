@@ -58,7 +58,9 @@ define(["utils"], function(utils) {
             $test3.prepend(comment);
             observer3.observe($test3.get(0), {
                 "characterData" : true,
-                "subtree": true
+                "subtree": true,
+                "childList": true,
+                "attributes": true
             });
             comment.textContent = "test";
             ok(observer3.takeRecords(), [], "ignores comment nodes");

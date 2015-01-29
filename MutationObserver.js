@@ -442,19 +442,17 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
     function clone($target, config) {
         var recurse = true; // set true so childList we'll always check the first level
         return (function copy($target) {
-            var isText = $target.nodeType === 3;
             var elestruct = {
                 /** @type {Node} */
                 node: $target
             };
 
-            // is text or comemnt node
-            if (isText || $target.nodeType === 8) {
-                if (isText && config.charData) {
-                    elestruct.charData = $target.nodeValue;
-                }
-            } else { // its either a element or document node (or something stupid)
-
+            // Store current character data of target text node if observed
+            if ($target.nodeType === 3 && config.charData) {
+                elestruct.charData = $target.nodeValue;
+            }
+            // its either a element, comment, doc frag or document node
+            else {
                 // Add attr only if subtree is specified or top level and avoid if
                 // attributes is a document object (#13).
                 if (config.attr && recurse && $target.nodeType === 1) {
