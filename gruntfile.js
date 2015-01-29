@@ -45,10 +45,11 @@ module.exports = function(grunt) {
                     username: process.env.SAUCE_USERNAME || "mutationobserver",
                     key: process.env.SAUCE_ACCESS_KEY || "",
                     build: process.env.TRAVIS_JOB_ID,
-                    tags: ["master"],
                     urls: ["http://localhost:8000/test/index.html"],
+                    tags: ["master"],
                     testname: "MutationObserver QUnit tests",
-                    browsers: grunt.file.readYAML("target-browsers.yml")
+                    browsers: grunt.file.readYAML("target-browsers.yml"),
+                    maxRetries: 3
                 }
             }
         },
