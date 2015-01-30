@@ -12,8 +12,9 @@
  * prefix bugs:
     - https://bugs.webkit.org/show_bug.cgi?id=85161
     - https://bugzilla.mozilla.org/show_bug.cgi?id=749920
+ * Don't use WebKitMutationObserver as Safari (6.0.5-6.1) use a buggy implementation
 */
-window.MutationObserver = window.MutationObserver || window.WebKitMutationObserver || (function(undefined) {
+window.MutationObserver = window.MutationObserver || (function(undefined) {
     "use strict";
     /**
      * @param {function(Array.<MutationRecord>, MutationObserver)} listener

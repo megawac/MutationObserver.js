@@ -44,9 +44,6 @@
     browserName: safari
     version: 6
     platform: "OS X 10.8"
-- #supported
-    browserName: safari
-    version: 7
 -
     browserName: iphone
     version: 5
@@ -61,12 +58,10 @@
     version: 7
 -
     browserName: android
-    platform: Linux
-    version: 4.3
--
     version: 4.2
-    browserName: android
+    platform: Linux
 -
-    version: 4.0
     browserName: android
+    version: 4.0
+    platform: Linux
 
