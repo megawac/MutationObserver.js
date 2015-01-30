@@ -346,8 +346,8 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
                 if ($cur === $old) { // expected case - optimized for this case
                     // check attributes as specified by config
                     if (config.attr && oldstruct.attr) /* oldstruct.attr instead of textnode check */findAttributeMutations(mutations, $cur, oldstruct.attr, config.afilter);
-                    // check character data if set
-                    if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
+                    // check character data if node is a comment or textNode and it's being observed
+                    if (config.charData && oldstruct.charData !== undefined && $cur.nodeValue !== oldstruct.charData) {
                         mutations.push(MutationRecord({
                             type: "characterData",
                             target: $cur
@@ -447,8 +447,9 @@ window.MutationObserver = window.MutationObserver || window.WebKitMutationObserv
                 node: $target
             };
 
-            // Store current character data of target text node if observed
-            if ($target.nodeType === 3 && config.charData) {
+            // Store current character data of target text or comment node if the config requests
+            // those properties to be observed.
+            if (config.charData && ($target.nodeType === 3 || $target.nodeType === 8)) {
                 elestruct.charData = $target.nodeValue;
             }
             // its either a element, comment, doc frag or document node

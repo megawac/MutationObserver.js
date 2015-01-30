@@ -201,6 +201,10 @@ define([], function() {
 
             return function expectRecord(record, expected, msg) {
                 expected = MutationRecord(expected);
+
+                if (!record) {
+                    return deepEqual(record, expected, msg);
+                }
                 //old webkit and moz didnt have next/prev siblings
                 record = MutationRecord(record);
                 //because knowing if the previous/nextsiblign is impossible in the polyfill

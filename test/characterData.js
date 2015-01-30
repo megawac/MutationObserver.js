@@ -54,16 +54,18 @@ define(["utils"], function(utils) {
 
             var observer3 = new MutationObserver(function(/*items, observer*/) {});
             var $test3 = $("<div><span class='name'>3</span><span class='name'>2</span><span class='name'>1</span></div>");
-            var comment = document.createComment("don't check comments");
+            var comment = document.createComment("checks comments");
             $test3.prepend(comment);
             observer3.observe($test3.get(0), {
-                "characterData" : true,
-                "subtree": true,
-                "childList": true,
-                "attributes": true
+                "characterData": true,
+                "subtree": true
             });
-            comment.textContent = "test";
-            ok(observer3.takeRecords(), [], "ignores comment nodes");
+            observer3.takeRecords();
+            comment.nodeValue = "test";
+            utils.expectRecord(observer3.takeRecords()[0], {
+                target: comment,
+                type: "characterData"
+            }, "Supports comment nodes");
             
             deferred.done(function() {
                 observer.disconnect();
