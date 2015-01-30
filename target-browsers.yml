@@ -1,11 +1,9 @@
 - #webkitMutationObserver -> MutationObserver
     browserName: chrome
-    platform: XP
     version: 26
 - #supported
     browserName: chrome
-    platform: OS X 10.6
-    version: 34
+    version: 39
 - #supported
     browserName: firefox
     platform: linux
@@ -19,6 +17,9 @@
     browserName: firefox
     platform: OS X 10.9
     version: 4
+- #supported
+    browserName: internet explorer
+    version: 11
 - #not supported
     browserName: internet explorer
     version: 10
@@ -43,14 +44,29 @@
     browserName: safari
     version: 6
     platform: "OS X 10.8"
+- #supported
+    browserName: safari
+    version: 7
 -
     browserName: iphone
     version: 5
 -
+    browserName: iphone
+    version: 6
+-
     browserName: ipad
     version: 4
-    platform: OS X 10.6
+-
+    browserName: ipad
+    version: 7
 -
     browserName: android
     platform: Linux
     version: 4.3
+-
+    version: 4.2
+    browserName: android
+-
+    version: 4.0
+    browserName: android
+
