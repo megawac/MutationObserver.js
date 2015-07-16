@@ -209,7 +209,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
         try {
             return attr.value;
         }
-        catch {
+        catch(e) {
             return null;
         }
     }
