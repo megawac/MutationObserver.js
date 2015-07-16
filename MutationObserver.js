@@ -199,6 +199,21 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
         };
     }
 
+    /**
+     * Gets an attribute value ignoring errors
+     *
+     * @param {Attr} attr
+     * @return {String} an attribute value or null in case of errors
+     */
+    function getAttributeValueSafe(attr) {
+        try {
+            return attr.value;
+        }
+        catch {
+            return null;
+        }
+    }
+
     /* attributes + attributeFilter helpers */
 
     /**
@@ -220,7 +235,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
             attr = attributes[i];
             name = attr.name;
             if (!filter || has(filter, name)) {
-                if (attr.value !== $oldstate[name]) {
+                if (getAttributeValueSafe(attr) !== $oldstate[name]) {
                     // The pushing is redundant but gzips very nicely
                     mutations.push(MutationRecord({
                         type: "attributes",
@@ -464,7 +479,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
                      */
                     elestruct.attr = reduce($target.attributes, function(memo, attr) {
                         if (!config.afilter || config.afilter[attr.name]) {
-                            memo[attr.name] = attr.value;
+                            memo[attr.name] = getAttributeValueSafe(attr);
                         }
                         return memo;
                     }, {});
