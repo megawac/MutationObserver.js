@@ -207,7 +207,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
      */
     function getAttributeValueSafe(attr) {
         try {
-            return attr.value;
+            return attr.ownerElement[attr.name].toString();
         }
         catch (e) {
             return null;
