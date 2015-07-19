@@ -95,7 +95,7 @@ define(["utils"], function(utils) {
 					}
 				};
 				records = observer4.takeRecords();
-				ok(true);
+				deepEqual(records, []);
 			} catch(err) {
 				notOk(err, "#21: shouldn't go crazy with sketchy custom attributes");
 			} finally {
