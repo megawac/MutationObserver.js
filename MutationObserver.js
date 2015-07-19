@@ -211,30 +211,28 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
     }
 
     /**
-     * Gets an attribute value ignoring errors
+     * Gets element attributes skipping the attributes came from properties
      *
-     * @param {Attr} attr
-     * @return {String} an attribute value or null in case of errors
+     * @param {HTMLElement} el
+     * @return {NamedNodeMap}
      */
-    function getAttributeValueWithCatch(attr) {
-        try {
-            return attr.expando ? attr.ownerElement[attr.name].toString() : attr.value;
-        } catch (e) {
-            return null;
-        }
+    function getAttributesSkippingProperties(el) {
+        var wrapper = document.createElement("div");
+        wrapper.innerHTML = el.outerHTML;
+        return wrapper.firstChild.attributes;
     }
 
     /**
-     * Gets an attribute value
+     * Gets element attributes
      *
-     * @param {Attr} attr
-     * @return {String} an attribute value
+     * @param {HTMLElement} el
+     * @return {NamedNodeMap}
      */
-    function getAttributeValueSimple(attr) {
-        return attr.value;
+    function getAttributesSimple(el) {
+        return el.attributes;
     }
 
-    var getAttributeValueSafe = checkBrowserTreatsPropertiesAsAttributes() ? getAttributeValueWithCatch : getAttributeValueSimple;
+    var getAttributes = checkBrowserTreatsPropertiesAsAttributes() ? getAttributesSkippingProperties : getAttributesSimple;
 
     /* attributes + attributeFilter helpers */
 
@@ -249,7 +247,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
      */
     function findAttributeMutations(mutations, $target, $oldstate, filter) {
         var checked = {};
-        var attributes = $target.attributes;
+        var attributes = getAttributes($target);
         var attr;
         var name;
         var i = attributes.length;
@@ -257,7 +255,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
             attr = attributes[i];
             name = attr.name;
             if (!filter || has(filter, name)) {
-                if (getAttributeValueSafe(attr) !== $oldstate[name]) {
+                if (attr.value !== $oldstate[name]) {
                     // The pushing is redundant but gzips very nicely
                     mutations.push(MutationRecord({
                         type: "attributes",
@@ -499,9 +497,9 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
                      * clone live attribute list to an object structure {name: val}
                      * @type {Object.<string, string>}
                      */
-                    elestruct.attr = reduce($target.attributes, function(memo, attr) {
+                    elestruct.attr = reduce(getAttributes($target), function(memo, attr) {
                         if (!config.afilter || config.afilter[attr.name]) {
-                            memo[attr.name] = getAttributeValueSafe(attr);
+                            memo[attr.name] = attr.value;
                         }
                         return memo;
                     }, {});
