@@ -218,7 +218,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
      * @return {String} an attribute value
      */
     function getAttributeSimple(el, attr) {
-        return attr.value
+        return attr.value;
     }
 
     /**
