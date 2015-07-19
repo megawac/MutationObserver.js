@@ -200,18 +200,41 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
     }
 
     /**
+     * Checks if browser treats properties as attributes
+     *
+     * @return {boolean}
+     */
+    function checkBrowserTreatsPropertiesAsAttributes() {
+        var div = document.createElement("div");
+        div.testProperty = {};
+        return div.attributes.length !== 0;
+    }
+
+    /**
      * Gets an attribute value ignoring errors
      *
      * @param {Attr} attr
      * @return {String} an attribute value or null in case of errors
      */
-    function getAttributeValueSafe(attr) {
+    function getAttributeValueWithCatch(attr) {
         try {
             return attr.expando ? attr.ownerElement[attr.name].toString() : attr.value;
         } catch (e) {
             return null;
         }
     }
+
+    /**
+     * Gets an attribute value
+     *
+     * @param {Attr} attr
+     * @return {String} an attribute value
+     */
+    function getAttributeValueSimple(attr) {
+        return attr.value;
+    }
+
+    var getAttributeValueSafe = checkBrowserTreatsPropertiesAsAttributes() ? getAttributeValueWithCatch : getAttributeValueSimple;
 
     /* attributes + attributeFilter helpers */
 
