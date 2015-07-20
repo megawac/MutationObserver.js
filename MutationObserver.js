@@ -199,21 +199,18 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
         };
     }
 
-    /**
-     * Checks if browser provides value for style attribute
-     *
-     * @return {boolean}
-     */
-    function checkAttributeStyleReturnsValue() {
-        var div = document.createElement("div");
-        div.style.display = "block";
-        return div.attributes.style.value !== "null";
-    }
+    /* attributes + attributeFilter helpers */
+
+    // Check if the environment has the attribute bug (#4) which cause
+    // element.attributes.style to always be null.
+    var hasAttributeBug = document.createElement("i");
+    hasAttributeBug.style.top = 0;
+    hasAttributeBug = hasAttributeBug.attributes.style.value != "null";
 
     /**
-     * Gets an attribute value
+     * Gets an attribute value in an environment without attribute bug
      *
-     * @param {HTMLElement} el
+     * @param {Node} el
      * @param {Attr} attr
      * @return {String} an attribute value
      */
@@ -222,21 +219,17 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
     }
 
     /**
-     * Gets an attribute value with special hack for style attribute
+     * Gets an attribute value with special hack for style attribute (see #4)
      *
-     * @param {HTMLElement} el
+     * @param {Node} el
      * @param {Attr} attr
      * @return {String} an attribute value
      */
     function getAttributeWithStyleHack(el, attr) {
-        if (attr.name !== "style")
-            return attr.value;
-        return el.style.cssText;
+        return attr.name !== "style" ? attr.value : el.style.cssText;
     }
 
-    var getAttributeValue = checkAttributeStyleReturnsValue() ? getAttributeSimple : getAttributeWithStyleHack;
-
-    /* attributes + attributeFilter helpers */
+    var getAttributeValue = hasAttributeBug ? getAttributeSimple : getAttributeWithStyleHack;
 
     /**
      * fast helper to check to see if attributes object of an element has changed
