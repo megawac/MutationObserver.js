@@ -67,6 +67,9 @@ module.exports = function(grunt) {
                     warning_level: "VERBOSE",
                     // output_info: "warnings"
 
+                    create_source_map: "dist/<%= pkg['short name'] %>.map",
+                    output_wrapper: "%output%\n//# sourceMappingURL=<%= pkg['short name'] %>.map",
+
                     banner: [
                         "// <%= pkg.name %> v<%= grunt.file.readJSON('package.json').version %> (<%= pkg.repository.url %>)",
                         "// Authors: <% _.each(pkg.authors, function(author) { %><%= author.name %> (<%= author.email %>) <% }); %>"
