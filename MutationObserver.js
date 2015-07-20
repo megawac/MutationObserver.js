@@ -234,6 +234,43 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
 
     var getAttributes = checkBrowserTreatsPropertiesAsAttributes() ? getAttributesSkippingProperties : getAttributesSimple;
 
+   /**
+     * Checks if browser provides value for style attribute
+     *
+     * @return {boolean}
+     */
+    function checkAttributeStyleReturnsValue() {
+        var div = document.createElement("div");
+        div.style.display = "block";
+        return div.attributes.style.value !== "null";
+    }
+
+   /**
+     * Gets an attribute value
+     *
+     * @param {HTMLElement} el
+     * @param {Attr} attr
+     * @return {String} an attribute value
+     */
+    function getAttributeSimple(el, attr) {
+        return attr.value;
+    }
+
+    /**
+     * Gets an attribute value with special hack for style attribute
+     *
+     * @param {HTMLElement} el
+     * @param {Attr} attr
+     * @return {String} an attribute value
+     */
+    function getAttributeWithStyleHack(el, attr) {
+        if (attr.name !== "style")
+            return attr.value;
+        return el.style.cssText;
+    }
+
+    var getAttributeValue = checkAttributeStyleReturnsValue() ? getAttributeSimple : getAttributeWithStyleHack;
+
     /* attributes + attributeFilter helpers */
 
     /**
@@ -255,7 +292,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
             attr = attributes[i];
             name = attr.name;
             if (!filter || has(filter, name)) {
-                if (attr.value !== $oldstate[name]) {
+                if (getAttributeValue($target, attr) !== $oldstate[name]) {
                     // The pushing is redundant but gzips very nicely
                     mutations.push(MutationRecord({
                         type: "attributes",
@@ -499,7 +536,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
                      */
                     elestruct.attr = reduce(getAttributes($target), function(memo, attr) {
                         if (!config.afilter || config.afilter[attr.name]) {
-                            memo[attr.name] = attr.value;
+                            memo[attr.name] = getAttributeValue($target, attr);
                         }
                         return memo;
                     }, {});

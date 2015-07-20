@@ -3,7 +3,7 @@ MutationObserver
 
 [![Browser Test Status](https://saucelabs.com/browser-matrix/mutationobserver.svg)](https://saucelabs.com/u/mutationobserver)  
 <sup>Note: IE7 fails due to quirky attribute handling ([see #4](https://github.com/megawac/MutationObserver.js/issues/4))</sup>    
-<sup>Note: the svg swapped the working browsers; IE8 works and so does Safari 5</sup>
+<sup>Note: the svg swapped the working browsers; IE8 works while IE7 fails 1 test</sup>
 
 A polyfill for the [MutationObserver API](http://www.w3.org/TR/2013/WD-dom-20131107/#mutation-observers) ([can I use?](http://caniuse.com/mutationobserver)). The polyfill is more cause we can than should (with subtree at any rate)... It's async and uses a recursive timeout fallback (default checks changes every 30ms + runtime) instead of using the deprecated [DOM3 MutationEvents](http://www.w3.org/TR/DOM-Level-3-Events/#events-mutationevents) so theoretically can support virtually any environment.  
 
