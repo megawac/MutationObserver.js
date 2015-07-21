@@ -1,7 +1,7 @@
 define(["utils"], function(utils) {
     return function() {//tests
         QUnit.asyncTest("observe", 4, function() {
-            var deferred = utils.asyncAutocomplete();
+            var deferred = utils.asyncAutocomplete(400);
 
             var $test = $("<div>", {
                 "class": "test",
