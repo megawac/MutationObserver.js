@@ -215,6 +215,9 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
      * @return {String} an attribute value
      */
     function getAttributeSimple(el, attr) {
+        // There is a potential for a warning to occur here if the attribute is a custom attribute
+        // in IE<9 with a custom .toString method. This is just a warning and doesn't affect execution
+        // See https://github.com/megawac/MutationObserver.js/issues/21
         return attr.value;
     }
 
@@ -226,6 +229,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
      * @return {String} an attribute value
      */
     function getAttributeWithStyleHack(el, attr) {
+        // As with getAttributeSimple there is a potential warning for custom attribtues in IE7.
         return attr.name !== "style" ? attr.value : el.style.cssText;
     }
 
