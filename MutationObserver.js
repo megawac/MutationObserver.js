@@ -77,7 +77,8 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
             var settings = {
                 attr: !! (config.attributes || config.attributeFilter || config.attributeOldValue),
 
-                // some browsers are strict in their implementation that config.subtree and childList must be set together. We don't care - spec doesn't specify
+                // some browsers enforce that subtree must be set with childList, attributes or characterData.
+                // We don't care as spec doesn't specify this rule.
                 kids: !! config.childList,
                 descendents: !! config.subtree,
                 charData: !! (config.characterData || config.characterDataOldValue)
@@ -215,9 +216,9 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
      * @return {String} an attribute value
      */
     function getAttributeSimple(el, attr) {
-        // There is a potential for a warning to occur here if the attribute is a custom attribute
-        // in IE<9 with a custom .toString method. This is just a warning and doesn't affect execution
-        // See https://github.com/megawac/MutationObserver.js/issues/21
+        // There is a potential for a warning to occur here if the attribute is a
+        // custom attribute in IE<9 with a custom .toString() method. This is
+        // just a warning and doesn't affect execution (see #21)
         return attr.value;
     }
 
