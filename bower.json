@@ -1,0 +1,25 @@
+{
+  "name": "MutationObserver-shim",
+  "description": "MutationObserver shim for ES3 environments",
+  "main": "dist/mutationobserver.min.js",
+  "authors": [
+    "Graeme Yeates <yeatesgraeme@gmail.com>"
+  ],
+  "license": "Do What The Fuck You Want To Public License, Version 2",
+  "keywords": [
+    "DOM",
+    "observer",
+    "mutation",
+    "observer",
+    "MutationObserver"
+  ],
+  "homepage": "https://github.com/megawac/MutationObserver.js",
+  "moduleType": [],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
