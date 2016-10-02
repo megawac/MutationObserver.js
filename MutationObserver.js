@@ -182,6 +182,14 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
         return function(mutations) {
             var olen = mutations.length, dirty;
 
+            if (config.charData && $target.nodeType === 3 && $target.nodeValue !== $oldstate.charData) {
+                mutations.push(new MutationRecord({
+                  type: 'characterData',
+                  target: $target,
+                  oldValue: $oldstate.charData          
+                }));
+            }
+
             // Alright we check base level changes in attributes... easy
             if (config.attr && $oldstate.attr) {
                 findAttributeMutations(mutations, $target, $oldstate.attr, config.afilter);
@@ -334,7 +342,8 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
                 if (config.charData && $cur.nodeType === 3 && $cur.nodeValue !== oldstruct.charData) {
                     mutations.push(MutationRecord({
                         type: "characterData",
-                        target: $cur
+                        target: $cur,
+                        oldValue: oldstruct.charData
                     }));
                 }
                 // now look @ subtree
