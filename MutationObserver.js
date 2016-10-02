@@ -184,7 +184,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
 
             if (config.charData && $target.nodeType === 3 && $target.nodeValue !== $oldstate.charData) {
                 mutations.push(new MutationRecord({
-                  type: 'characterData',
+                  type: "characterData",
                   target: $target,
                   oldValue: $oldstate.charData          
                 }));
@@ -395,7 +395,8 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
                     if (config.charData && oldstruct.charData !== undefined && $cur.nodeValue !== oldstruct.charData) {
                         mutations.push(MutationRecord({
                             type: "characterData",
-                            target: $cur
+                            target: $cur,
+                            oldValue: oldstruct.charData
                         }));
                     }
 

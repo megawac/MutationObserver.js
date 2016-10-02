@@ -30,7 +30,8 @@ define(["utils"], function(utils) {
         equal(records.length, 1);
         utils.expectRecord(records[0], {
             type: "characterData",
-            target: $tar.firstChild
+            target: $tar.firstChild,
+            oldValue: "bx"
         });
 
         for (i = 2; i < 6; i++) {

@@ -1,6 +1,6 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("characterData", 4, function() {
+        QUnit.asyncTest("characterData", 5, function() {
             var deferred = utils.asyncAutocomplete(500);
 
             var $test = $("<div>", {
@@ -64,13 +64,29 @@ define(["utils"], function(utils) {
             comment.nodeValue = "test";
             utils.expectRecord(observer3.takeRecords()[0], {
                 target: comment,
-                type: "characterData"
+                type: "characterData",
+                oldValue: "checks comments"
             }, "Supports comment nodes");
+
+            // Issue #28
+            var observer4 = new MutationObserver(function(/*items, observer*/) {});
+            var textNode = document.createTextNode("str");
+            observer4.observe(textNode, {
+                "characterData": true
+            });
+            observer4.takeRecords();
+            textNode.data = "1";
+            utils.expectRecord(observer4.takeRecords()[0], {
+                target: textNode,
+                type: "characterData",
+                oldValue: "str"
+            }, "#28 observing text node direct");
             
             deferred.done(function() {
                 observer.disconnect();
                 observer2.disconnect();
                 observer3.disconnect();
+                observer4.disconnect();
             });
         });
     };
