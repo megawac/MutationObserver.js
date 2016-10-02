@@ -40,7 +40,7 @@
     "grunt-contrib-connect": "0.7",
     "grunt-contrib-jshint": ">= 0.8",
     "grunt-contrib-qunit": "~0.5.0",
-    "grunt-file-info": "1.0.4",
+    "grunt-file-info": "~1.0.14",
     "grunt-saucelabs": "~4.1.2",
     "grunt-tagrelease": "~0.3.1",
     "matchdep": "~0.3.0",
