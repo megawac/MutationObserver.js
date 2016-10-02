@@ -4,7 +4,8 @@ define(["utils"], function(utils) {
         observer.observe(doc, {
             attributes: true,
             subtree: true,
-            characterData: true
+            characterData: true,
+            characterDataOldValue: true
         });
         
         var target = $target[0];

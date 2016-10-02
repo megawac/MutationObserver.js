@@ -32,6 +32,7 @@ define(["utils"], function(utils) {
 
             observer.observe($test.get(0), {
                 characterData: true,
+                characterDataOldValue: true,
                 subtree: true
             });
 
@@ -42,6 +43,7 @@ define(["utils"], function(utils) {
 
             observer2.observe($test.get(0), {
                 characterData: true,
+                characterDataOldValue: true,
                 childList: true,
                 subtree: true
             });
@@ -57,8 +59,9 @@ define(["utils"], function(utils) {
             var comment = document.createComment("checks comments");
             $test3.prepend(comment);
             observer3.observe($test3.get(0), {
-                "characterData": true,
-                "subtree": true
+                characterData: true,
+                characterDataOldValue: true,
+                subtree: true
             });
             observer3.takeRecords();
             comment.nodeValue = "test";
@@ -72,7 +75,8 @@ define(["utils"], function(utils) {
             var observer4 = new MutationObserver(function(/*items, observer*/) {});
             var textNode = document.createTextNode("str");
             observer4.observe(textNode, {
-                "characterData": true
+                characterDataOldValue: true,
+                characterData: true
             });
             observer4.takeRecords();
             textNode.data = "1";
