@@ -4,7 +4,7 @@
  * Repository: https://github.com/megawac/MutationObserver.js
  * License: WTFPL V2, 2004 (wtfpl.net).
  * Though credit and staring the repo will make me feel pretty, you can modify and redistribute as you please.
- * Attempts to follow spec (http:// www.w3.org/TR/dom/#mutation-observers) as closely as possible for native javascript
+ * Attempts to follow spec (https://www.w3.org/TR/dom/#mutation-observers) as closely as possible for native javascript
  * See https://github.com/WebKit/webkit/blob/master/Source/WebCore/dom/MutationObserver.cpp for current webkit source c++ implementation
  */
 
@@ -62,7 +62,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
      */
     MutationObserver.prototype = {
         /**
-         * see http:// dom.spec.whatwg.org/#dom-mutationobserver-observe
+         * see https://dom.spec.whatwg.org/#dom-mutationobserver-observe
          * not going to throw here but going to follow the current spec config sets
          * @param {Node|null} $target
          * @param {Object|null} config : MutationObserverInit configuration dictionary
@@ -611,7 +611,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
         return obj[prop] !== undefined; // will be nicely inlined by gcc
     }
 
-    // GCC hack see http:// stackoverflow.com/a/23202438/1517919
+    // GCC hack see https://stackoverflow.com/a/23202438/1517919
     function JSCompiler_renameProperty(a) {
         return a;
     }
