@@ -210,13 +210,49 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
 
     /* attributes + attributeFilter helpers */
 
+   /**
+     * Checks if browser treats properties as attributes
+     *
+     * @return {boolean}
+     */
+    function checkBrowserTreatsPropertiesAsAttributes() {
+        var div = document.createElement("div");
+        div.testProperty = {};
+        return div.attributes.length !== 0;
+    }
+
+    /**
+     * Gets element attributes skipping the attributes came from properties
+     *
+     * @param {HTMLElement} el
+     * @return {NamedNodeMap}
+     */
+    function getAttributesSkippingProperties(el) {
+        var wrapper = document.createElement("div");
+        wrapper.innerHTML = el.outerHTML;
+        return wrapper.firstChild.attributes;
+    }
+
+    /**
+     * Gets element attributes
+     *
+     * @param {HTMLElement} el
+     * @return {NamedNodeMap}
+     */
+    function getAttributesSimple(el) {
+        return el.attributes;
+    }
+
+    var getAttributes = checkBrowserTreatsPropertiesAsAttributes() ? getAttributesSkippingProperties : getAttributesSimple;
+
+
     // Check if the environment has the attribute bug (#4) which cause
     // element.attributes.style to always be null.
     var hasAttributeBug = document.createElement("i");
     hasAttributeBug.style.top = 0;
     hasAttributeBug = hasAttributeBug.attributes.style.value != "null";
 
-    /**
+   /**
      * Gets an attribute value in an environment without attribute bug
      *
      * @param {Node} el
@@ -255,7 +291,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
      */
     function findAttributeMutations(mutations, $target, $oldstate, filter) {
         var checked = {};
-        var attributes = $target.attributes;
+        var attributes = getAttributes($target);
         var attr;
         var name;
         var i = attributes.length;
@@ -507,7 +543,7 @@ window.MutationObserver = window.MutationObserver || (function(undefined) {
                      * clone live attribute list to an object structure {name: val}
                      * @type {Object.<string, string>}
                      */
-                    elestruct.attr = reduce($target.attributes, function(memo, attr) {
+                    elestruct.attr = reduce(getAttributes($target), function(memo, attr) {
                         if (!config.afilter || config.afilter[attr.name]) {
                             memo[attr.name] = getAttributeValue($target, attr);
                         }

@@ -1,6 +1,6 @@
 define(["utils"], function(utils) {
     return function() {//tests
-        QUnit.asyncTest("attributes and attributeFilter", 14, function() {
+        QUnit.asyncTest("attributes and attributeFilter", 15, function() {
             var deferred = utils.asyncAutocomplete(500);
 
             var $test = $("<div>", {
@@ -84,15 +84,29 @@ define(["utils"], function(utils) {
                 attributes: true,
                 attributeOldValue: true
             });
-            teste2.checked = false;
+            teste2.checked = false;			
             var records = observer4.takeRecords();
             deepEqual(records, [], "Should not match element properties (checked)");
+			
+			try {
+				teste2.customAttribute = {
+					toString: function toString() {
+						throw new Error("toString failed");
+					}
+				};
+				records = observer4.takeRecords();
+				deepEqual(records, []);
+			} catch(err) {
+				notOk(err, "#21: shouldn't go crazy with sketchy custom attributes");
+			} finally {
+				observer4.disconnect();
+			}
+            
 
             deferred.done(function() {
                 observer.disconnect();
                 observer2.disconnect();
                 observer3.disconnect();
-                observer4.disconnect();
             });
         });
     };
