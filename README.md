@@ -11,8 +11,10 @@ $ npm install mutationobserver-shim
 $ bower install MutationObserver-shim
 ```
 
+CDN [![](https://data.jsdelivr.com/v1/package/npm/mutationobserver-shim/badge)](https://www.jsdelivr.com/package/npm/mutationobserver-shim)
+
 ```html
-<script src="//cdn.jsdelivr.net/g/mutationobserver/"></script>
+<script src="//cdn.jsdelivr.net/npm/mutationobserver-shim/dist/mutationobserver.min.js"></script>
 ```
 
 ### Polyfill differences from standard interface
