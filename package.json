@@ -28,11 +28,7 @@
     "MutationObserver.js",
     "dist/mutationobserver.min.js"
   ],
-  "license": {
-    "type": "WTFPL",
-    "version": "v2 2004",
-    "url": "http://www.wtfpl.net/"
-  },
+  "license": "MIT",
   "devDependencies": {
     "grunt": "~0.4.2",
     "grunt-bumpup": "~0.5.0",
