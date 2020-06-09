@@ -26,7 +26,8 @@
   },
   "files": [
     "MutationObserver.js",
-    "dist/mutationobserver.min.js"
+    "dist/mutationobserver.min.js",
+    "dist/mutationobserver.map"
   ],
   "license": "MIT",
   "devDependencies": {
