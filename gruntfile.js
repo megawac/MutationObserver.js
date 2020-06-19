@@ -67,8 +67,8 @@ module.exports = function(grunt) {
                     warning_level: "VERBOSE",
                     // output_info: "warnings"
 
-                    create_source_map: "dist/<%= pkg['short name'] %>.map",
-                    output_wrapper: "%output%\n//# sourceMappingURL=<%= pkg['short name'] %>.map",
+                    create_source_map: "<%= pkg['short name'] %>.min.map",
+                    output_wrapper: "%output%\n//# sourceMappingURL=<%= pkg['short name'] %>.min.map",
 
                     banner: [
                         "// <%= pkg.name %> v<%= grunt.file.readJSON('package.json').version %> (<%= pkg.repository.url %>)",
@@ -77,16 +77,16 @@ module.exports = function(grunt) {
                     ].join("\n")
                 },
                 src: ["MutationObserver.js"],
-                dest: "dist/<%= pkg['short name'] %>.min.js"
+                dest: "<%= pkg['short name'] %>.min.js"
             }
         },
 
         file_info: {
             source_files: {
-                src: ["MutationObserver.js", "dist/<%= pkg['short name'] %>.min.js"],
+                src: ["MutationObserver.js", "<%= pkg['short name'] %>.min.js"],
                 options: {
                     inject: {
-                        dest: "dist/README.md",
+                        dest: "README.md",
                         text:   "- Original: {{= sizeText(size(src[0])) }}" +
                                 grunt.util.linefeed +
                                 "- Minified: {{= sizeText(size(src[1])) }}" +
