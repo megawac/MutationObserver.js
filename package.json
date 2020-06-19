@@ -20,14 +20,14 @@
     "git": "git@github.com:megawac/MutationObserver.js.git",
     "url": "github.com/megawac/MutationObserver.js"
   },
-  "main": "dist/mutationobserver.min.js",
+  "main": "mutationobserver.min.js",
   "scripts": {
     "test": "grunt test --verbose"
   },
   "files": [
     "MutationObserver.js",
-    "dist/mutationobserver.min.js",
-    "dist/mutationobserver.map"
+    "mutationobserver.min.js",
+    "mutationobserver.min.map"
   ],
   "license": "MIT",
   "devDependencies": {
